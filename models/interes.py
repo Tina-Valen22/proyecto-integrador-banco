@@ -2,11 +2,10 @@ from sqlmodel import SQLModel, Field, Relationship
 from typing import Optional, List
 
 class Interes(SQLModel, table=True):
-    idInteres: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True)
     tasa: float
     tipo: str
+    credito_id: int = Field(foreign_key="credito.id")
 
-    credito_id: int = Field(foreign_key="credito.idCredito")
-    credito: Optional["Credito"] = Relationship(back_populates="interes")
-
+    credito: Optional["Credito"] = Relationship(back_populates="intereses")
     simulaciones: List["Simulacion"] = Relationship(back_populates="interes")

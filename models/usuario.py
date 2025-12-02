@@ -4,7 +4,8 @@ from typing import Optional, List
 class Usuario(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     nombre: str
-    correo: str
-    telefono: str
+    ingresos: float
+    gastos: float
 
     creditos: List["Credito"] = Relationship(back_populates="usuario")
+    historial: List["Historial"] = Relationship(back_populates="usuario")
