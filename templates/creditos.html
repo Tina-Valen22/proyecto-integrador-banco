@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>Créditos</h1>
+
+<form method="post" action="/creditos/crear">
+    <h3>Crear Crédito</h3>
+    <input type="number" name="monto" placeholder="Monto" required>
+    <input type="number" name="plazo" placeholder="Plazo (meses)" required>
+    <input type="number" name="usuario_id" placeholder="ID del Usuario" required>
+    <button type="submit">Guardar</button>
+</form>
+
+<hr>
+
+<h3>Lista de Créditos</h3>
+<table>
+    <tr>
+        <th>ID</th>
+        <th>Monto</th>
+        <th>Plazo</th>
+        <th>Usuario</th>
+    </tr>
+
+    {% for c in creditos %}
+    <tr>
+        <td>{{ c.id }}</td>
+        <td>{{ c.monto }}</td>
+        <td>{{ c.plazo }}</td>
+        <td>{{ c.usuario_id }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+{% endblock %}
