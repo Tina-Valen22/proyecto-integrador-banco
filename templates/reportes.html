@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>Reportes</h1>
+
+<form method="post" action="/reportes/crear">
+    <textarea name="grafico" placeholder="Descripción del gráfico"></textarea>
+    <textarea name="estadisticas" placeholder="Estadísticas"></textarea>
+    <input type="number" name="simulacion_id" placeholder="ID Simulación" required>
+    <button type="submit">Crear</button>
+</form>
+
+<hr>
+
+<h3>Lista de Reportes</h3>
+<table>
+    <tr><th>ID</th><th>Gráfico</th><th>Estadísticas</th><th>Simulación</th></tr>
+
+    {% for r in reportes %}
+    <tr>
+        <td>{{ r.id }}</td>
+        <td>{{ r.grafico }}</td>
+        <td>{{ r.estadisticas }}</td>
+        <td>{{ r.simulacion_id }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+{% endblock %}

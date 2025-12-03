@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>Simulaciones</h1>
+
+<form method="post" action="/simulaciones/crear">
+    <input type="number" name="cuota_mensual" placeholder="Cuota Mensual" required>
+    <input type="number" name="interes_total" placeholder="Interés Total" required>
+    <input type="number" name="saldo_final" placeholder="Saldo Final" required>
+    <input type="number" name="interes_id" placeholder="ID Interés" required>
+    <button type="submit">Crear</button>
+</form>
+
+<hr>
+
+<h3>Listado</h3>
+<table>
+    <tr><th>ID</th><th>Cuota</th><th>Interés Total</th><th>Saldo Final</th></tr>
+    {% for s in simulaciones %}
+    <tr>
+        <td>{{ s.id }}</td>
+        <td>{{ s.cuota_mensual }}</td>
+        <td>{{ s.interes_total }}</td>
+        <td>{{ s.saldo_final }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+{% endblock %}
