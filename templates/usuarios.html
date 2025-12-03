@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>Usuarios</h1>
+
+<form method="post" action="/usuarios/crear">
+    <h3>Crear Usuario</h3>
+    <input type="text" name="nombre" placeholder="Nombre" required>
+    <input type="number" name="ingresos" placeholder="Ingresos" required>
+    <input type="number" name="gastos" placeholder="Gastos" required>
+    <button type="submit">Guardar</button>
+</form>
+
+<hr>
+
+<h3>Lista de Usuarios</h3>
+<table>
+    <tr>
+        <th>ID</th>
+        <th>Nombre</th>
+        <th>Ingresos</th>
+        <th>Gastos</th>
+    </tr>
+
+    {% for u in usuarios %}
+    <tr>
+        <td>{{ u.id }}</td>
+        <td>{{ u.nombre }}</td>
+        <td>{{ u.ingresos }}</td>
+        <td>{{ u.gastos }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+{% endblock %}
