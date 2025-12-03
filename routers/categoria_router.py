@@ -1,61 +1,65 @@
-from fastapi import APIRouter, Depends, HTTPException
+# routers/categoria_router.py
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.templating import Jinja2Templates
 from sqlmodel import Session, select
 from database import get_session
 from models.categoria import Categoria
+from models.credito_categoria import CreditoCategoria
+from models.credito import Credito
+from models.historial import Historial
 
-router = APIRouter(prefix="/categorias", tags=["Categorías"])
+templates = Jinja2Templates(directory="templates")
+router = APIRouter(prefix="/categorias", tags=["Categorias"])
 
-# CREATE
-@router.post("/")
+@router.get("/")
+def ver_categorias(request: Request, session: Session = Depends(get_session)):
+    categorias = session.exec(select(Categoria)).all()
+    return templates.TemplateResponse("categorias.html", {"request": request, "categorias": categorias})
+
+@router.post("/crear")
 def crear_categoria(categoria: Categoria, session: Session = Depends(get_session)):
     session.add(categoria)
     session.commit()
     session.refresh(categoria)
+
+    h = Historial(accion="CREAR", detalle=f"Categoría '{categoria.nombre}' creada", usuario_id=None)
+    session.add(h)
+    session.commit()
     return categoria
 
-# READ ALL
-@router.get("/")
-def listar_categorias(session: Session = Depends(get_session)):
-    return session.exec(select(Categoria)).all()
-
-# READ ONE
 @router.get("/{categoria_id}")
 def obtener_categoria(categoria_id: int, session: Session = Depends(get_session)):
-    categoria = session.get(Categoria, categoria_id)
-    if not categoria:
+    cat = session.get(Categoria, categoria_id)
+    if not cat:
         raise HTTPException(status_code=404, detail="Categoría no encontrada")
-    return categoria
+    return cat
 
-# UPDATE
-@router.put("/{categoria_id}")
-def actualizar_categoria(categoria_id: int, datos: Categoria, session: Session = Depends(get_session)):
-    categoria = session.get(Categoria, categoria_id)
-    if not categoria:
-        raise HTTPException(status_code=404, detail="Categoría no encontrada")
-    categoria.nombre = datos.nombre
+@router.post("/vincular")
+def vincular_credito_categoria(credito_id: int, categoria_id: int, session: Session = Depends(get_session)):
+    credito = session.get(Credito, credito_id)
+    cat = session.get(Categoria, categoria_id)
+    if not credito or not cat:
+        raise HTTPException(status_code=404, detail="Crédito o Categoría no encontrados")
+
+    link = CreditoCategoria(credito_id=credito_id, categoria_id=categoria_id)
+    session.add(link)
     session.commit()
-    session.refresh(categoria)
-    return categoria
+    session.refresh(link)
 
-# PATCH
-@router.patch("/{categoria_id}")
-def patch_categoria(categoria_id: int, datos: dict, session: Session = Depends(get_session)):
-    categoria = session.get(Categoria, categoria_id)
-    if not categoria:
-        raise HTTPException(status_code=404, detail="Categoría no encontrada")
-    for key, value in datos.items():
-        if hasattr(categoria, key):
-            setattr(categoria, key, value)
+    h = Historial(accion="VINCULAR", detalle=f"Crédito {credito_id} vinculado a categoría '{cat.nombre}'", usuario_id=credito.usuario_id)
+    session.add(h)
     session.commit()
-    session.refresh(categoria)
-    return categoria
+    return {"mensaje": "Vinculado correctamente", "link": link}
 
-# DELETE
 @router.delete("/{categoria_id}")
 def eliminar_categoria(categoria_id: int, session: Session = Depends(get_session)):
-    categoria = session.get(Categoria, categoria_id)
-    if not categoria:
+    cat = session.get(Categoria, categoria_id)
+    if not cat:
         raise HTTPException(status_code=404, detail="Categoría no encontrada")
-    session.delete(categoria)
+
+    h = Historial(accion="ELIMINAR", detalle=f"Categoría '{cat.nombre}' eliminada", usuario_id=None)
+    session.add(h)
+
+    session.delete(cat)
     session.commit()
-    return {"mensaje": "Categoría eliminada correctamente"}
+    return {"mensaje": "Categoría eliminada"}

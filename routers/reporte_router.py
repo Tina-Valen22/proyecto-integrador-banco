@@ -1,58 +1,57 @@
-from fastapi import APIRouter, HTTPException, Depends
+# routers/reporte_router.py
+from fastapi import APIRouter, Depends, HTTPException, Request, Form
+from fastapi.templating import Jinja2Templates
 from sqlmodel import Session, select
-from database import engine
+from database import get_session
 from models.reporte import Reporte
+from models.simulacion import Simulacion
 from models.historial import Historial
-from datetime import datetime
+from typing import List
 
+templates = Jinja2Templates(directory="templates")
 router = APIRouter(prefix="/reportes", tags=["Reportes"])
 
-def get_session():
-    with Session(engine) as session:
-        yield session
-
-@router.post("/")
-def crear_reporte(reporte: Reporte, session: Session = Depends(get_session)):
-    session.add(reporte)
-    session.commit()
-    session.refresh(reporte)
-    return reporte
-
 @router.get("/")
+def ver_reportes(request: Request, session: Session = Depends(get_session)):
+    reportes = session.exec(select(Reporte)).all()
+    return templates.TemplateResponse("reportes.html", {"request": request, "reportes": reportes})
+
+@router.post("/crear")
+def crear_reporte(grafico: str = Form(...), estadisticas: str = Form(...), simulacion_id: int = Form(...), session: Session = Depends(get_session)):
+    sim = session.get(Simulacion, simulacion_id)
+    if not sim:
+        raise HTTPException(status_code=404, detail="Simulación no encontrada")
+
+    rep = Reporte(grafico=grafico, estadisticas=estadisticas, simulacion_id=simulacion_id)
+    session.add(rep)
+    session.commit()
+    session.refresh(rep)
+
+    # historial
+    usuario_id = None
+    try:
+        usuario_id = sim.interes.credito.usuario_id
+    except Exception:
+        pass
+
+    h = Historial(accion="CREAR", detalle=f"Reporte creado para simulación {simulacion_id}", usuario_id=usuario_id)
+    session.add(h)
+    session.commit()
+    return {"mensaje": "Reporte creado", "reporte": rep}
+
+@router.get("/listar", response_model=List[Reporte])
 def listar_reportes(session: Session = Depends(get_session)):
     return session.exec(select(Reporte)).all()
 
-@router.get("/{reporte_id}")
-def obtener_reporte(reporte_id: int, session: Session = Depends(get_session)):
-    reporte = session.get(Reporte, reporte_id)
-    if not reporte:
-        raise HTTPException(status_code=404, detail="Reporte no encontrado")
-    return reporte
-
-@router.put("/{reporte_id}")
-def actualizar_reporte(reporte_id: int, datos: Reporte, session: Session = Depends(get_session)):
-    reporte = session.get(Reporte, reporte_id)
-    if not reporte:
-        raise HTTPException(status_code=404, detail="Reporte no encontrado")
-    reporte.grafico = datos.grafico
-    reporte.estadisticas = datos.estadisticas
-    session.commit()
-    session.refresh(reporte)
-    return reporte
-
 @router.delete("/{reporte_id}")
 def eliminar_reporte(reporte_id: int, session: Session = Depends(get_session)):
-    reporte = session.get(Reporte, reporte_id)
-    if not reporte:
+    rep = session.get(Reporte, reporte_id)
+    if not rep:
         raise HTTPException(status_code=404, detail="Reporte no encontrado")
 
-    historial = Historial(
-        entidad="Reporte",
-        accion="ELIMINAR",
-        descripcion=f"Reporte {reporte.idReporte} eliminado",
-        fecha=datetime.now()
-    )
-    session.add(historial)
-    session.delete(reporte)
+    h = Historial(accion="ELIMINAR", detalle=f"Reporte {reporte_id} eliminado", usuario_id=None)
+    session.add(h)
+
+    session.delete(rep)
     session.commit()
-    return {"mensaje": "Reporte eliminado y registrado en historial"}
+    return {"mensaje": "Reporte eliminado y registrado"}
