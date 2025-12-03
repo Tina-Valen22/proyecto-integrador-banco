@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Form
 from fastapi.templating import Jinja2Templates
+from fastapi.responses import RedirectResponse
 from sqlmodel import Session, select
 from database import get_session
 from models.usuario import Usuario
@@ -13,12 +14,21 @@ templates = Jinja2Templates(directory="templates")
 @router.get("/")
 def ver_usuarios(request: Request, session: Session = Depends(get_session)):
     usuarios = session.exec(select(Usuario)).all()
-    return templates.TemplateResponse("usuarios.html", {"request": request, "usuarios": usuarios})
+    return templates.TemplateResponse("usuarios.html", {
+        "request": request,
+        "usuarios": usuarios
+    })
 
 
 # ---------------- API CRUD ----------------
 @router.post("/crear")
-def crear_usuario(usuario: Usuario, session: Session = Depends(get_session)):
+def crear_usuario(
+    nombre: str = Form(...),
+    ingresos: float = Form(...),
+    gastos: float = Form(...),
+    session: Session = Depends(get_session)
+):
+    usuario = Usuario(nombre=nombre, ingresos=ingresos, gastos=gastos)
     session.add(usuario)
     session.commit()
     session.refresh(usuario)
@@ -32,12 +42,14 @@ def crear_usuario(usuario: Usuario, session: Session = Depends(get_session)):
     session.add(historial)
     session.commit()
 
-    return usuario
+    return RedirectResponse(url="/usuarios", status_code=303)
 
 
 @router.get("/buscar")
 def buscar_usuario(nombre: str, session: Session = Depends(get_session)):
-    usuarios = session.exec(select(Usuario).where(Usuario.nombre.contains(nombre))).all()
+    usuarios = session.exec(
+        select(Usuario).where(Usuario.nombre.contains(nombre))
+    ).all()
     return usuarios
 
 
@@ -49,15 +61,21 @@ def obtener_usuario(usuario_id: int, session: Session = Depends(get_session)):
     return usuario
 
 
-@router.put("/{usuario_id}")
-def actualizar_usuario(usuario_id: int, datos: Usuario, session: Session = Depends(get_session)):
+@router.post("/actualizar/{usuario_id}")
+def actualizar_usuario(
+    usuario_id: int,
+    nombre: str = Form(...),
+    ingresos: float = Form(...),
+    gastos: float = Form(...),
+    session: Session = Depends(get_session)
+):
     usuario = session.get(Usuario, usuario_id)
     if not usuario:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
-    usuario.nombre = datos.nombre
-    usuario.ingresos = datos.ingresos
-    usuario.gastos = datos.gastos
+    usuario.nombre = nombre
+    usuario.ingresos = ingresos
+    usuario.gastos = gastos
 
     session.commit()
     session.refresh(usuario)
@@ -70,10 +88,10 @@ def actualizar_usuario(usuario_id: int, datos: Usuario, session: Session = Depen
     session.add(historial)
     session.commit()
 
-    return usuario
+    return RedirectResponse(url="/usuarios", status_code=303)
 
 
-@router.delete("/{usuario_id}")
+@router.post("/eliminar/{usuario_id}")
 def eliminar_usuario(usuario_id: int, session: Session = Depends(get_session)):
     usuario = session.get(Usuario, usuario_id)
     if not usuario:
@@ -89,4 +107,4 @@ def eliminar_usuario(usuario_id: int, session: Session = Depends(get_session)):
     session.delete(usuario)
     session.commit()
 
-    return {"mensaje": "Usuario eliminado y registrado en historial"}
+    return RedirectResponse(url="/usuarios", status_code=303)
