@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>Categorías</h1>
+
+<form method="post" action="/categorias/crear">
+    <input type="text" name="nombre" placeholder="Nombre categoría" required>
+    <button type="submit">Crear</button>
+</form>
+
+<hr>
+
+<h3>Lista de Categorías</h3>
+<table>
+    <tr><th>ID</th><th>Nombre</th></tr>
+    {% for c in categorias %}
+    <tr>
+        <td>{{ c.id }}</td>
+        <td>{{ c.nombre }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+{% endblock %}
