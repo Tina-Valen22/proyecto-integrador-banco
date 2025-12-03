@@ -1,24 +1,46 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
+{% block title %}Categorías{% endblock %}
 
 {% block content %}
 <h1>Categorías</h1>
 
+<h2>Crear Categoría</h2>
 <form method="post" action="/categorias/crear">
     <input type="text" name="nombre" placeholder="Nombre categoría" required>
-    <button type="submit">Crear</button>
+    <input type="text" name="descripcion" placeholder="Descripción">
+    <button type="submit">Guardar</button>
 </form>
 
-<hr>
+<h2>Vincular Crédito a Categoría</h2>
+<form method="post" action="/categorias/vincular">
+    <select name="credito_id" required>
+        <option value="">Seleccione crédito</option>
+        {% for c in creditos %}
+        <option value="{{ c.id }}">Crédito {{ c.id }}</option>
+        {% endfor %}
+    </select>
 
-<h3>Lista de Categorías</h3>
+    <select name="categoria_id" required>
+        <option value="">Seleccione categoría</option>
+        {% for cat in categorias %}
+        <option value="{{ cat.id }}">{{ cat.nombre }}</option>
+        {% endfor %}
+    </select>
+
+    <button type="submit">Vincular</button>
+</form>
+
+<h2>Lista de Categorías</h2>
 <table>
-    <tr><th>ID</th><th>Nombre</th></tr>
+    <tr>
+        <th>ID</th><th>Nombre</th><th>Descripción</th>
+    </tr>
     {% for c in categorias %}
     <tr>
         <td>{{ c.id }}</td>
         <td>{{ c.nombre }}</td>
+        <td>{{ c.descripcion }}</td>
     </tr>
     {% endfor %}
 </table>
-
 {% endblock %}

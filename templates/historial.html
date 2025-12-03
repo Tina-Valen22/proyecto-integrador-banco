@@ -1,26 +1,21 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
+{% block title %}Historial{% endblock %}
 
 {% block content %}
-<h1>Historial de Acciones</h1>
+<h1>Historial</h1>
 
 <table>
     <tr>
-        <th>ID</th>
-        <th>Acción</th>
-        <th>Detalle</th>
-        <th>Usuario</th>
-        <th>Fecha</th>
+        <th>ID</th><th>Acción</th><th>Detalle</th><th>Usuario</th>
     </tr>
 
-    {% for item in logs %}
+    {% for h in logs %}
     <tr>
-        <td>{{ item.log.id }}</td>
-        <td>{{ item.log.accion }}</td>
-        <td>{{ item.log.detalle }}</td>
-        <td>{{ item.usuario_nombre if item.usuario_nombre else "N/A" }}</td>
-        <td>{{ item.log.fecha }}</td>
+        <td>{{ h.log.id }}</td>
+        <td>{{ h.log.accion }}</td>
+        <td>{{ h.log.detalle }}</td>
+        <td>{{ h.usuario_nombre }}</td>
     </tr>
     {% endfor %}
 </table>
-
 {% endblock %}

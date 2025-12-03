@@ -1,20 +1,29 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
+{% block title %}Intereses{% endblock %}
 
 {% block content %}
 <h1>Intereses</h1>
 
+<h2>Crear Interés</h2>
 <form method="post" action="/intereses/crear">
     <input type="number" step="0.01" name="tasa" placeholder="Tasa (%)" required>
-    <input type="text" name="tipo" placeholder="Tipo (EA / MV)" required>
-    <input type="number" name="credito_id" placeholder="ID Crédito" required>
+    <input type="text" name="tipo" placeholder="Tipo interés" required>
+
+    <select name="credito_id" required>
+        <option value="">Seleccione crédito</option>
+        {% for c in creditos %}
+        <option value="{{ c.id }}">Crédito {{ c.id }}</option>
+        {% endfor %}
+    </select>
+
     <button type="submit">Guardar</button>
 </form>
 
-<hr>
-
-<h3>Lista de Intereses</h3>
+<h2>Lista de Intereses</h2>
 <table>
-    <tr><th>ID</th><th>Tasa</th><th>Tipo</th><th>Crédito</th></tr>
+    <tr>
+        <th>ID</th><th>Tasa</th><th>Tipo</th><th>Crédito ID</th>
+    </tr>
     {% for i in intereses %}
     <tr>
         <td>{{ i.id }}</td>
@@ -24,5 +33,4 @@
     </tr>
     {% endfor %}
 </table>
-
 {% endblock %}

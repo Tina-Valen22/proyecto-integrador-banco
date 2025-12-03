@@ -1,21 +1,29 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
+{% block title %}Reportes{% endblock %}
 
 {% block content %}
 <h1>Reportes</h1>
 
+<h2>Crear Reporte</h2>
 <form method="post" action="/reportes/crear">
-    <textarea name="grafico" placeholder="Descripción del gráfico"></textarea>
-    <textarea name="estadisticas" placeholder="Estadísticas"></textarea>
-    <input type="number" name="simulacion_id" placeholder="ID Simulación" required>
-    <button type="submit">Crear</button>
+    <input type="text" name="grafico" placeholder="Nombre del gráfico" required>
+    <textarea name="estadisticas" placeholder="Estadísticas" required></textarea>
+
+    <select name="simulacion_id" required>
+        <option value="">Seleccione simulación</option>
+        {% for s in simulaciones %}
+        <option value="{{ s.id }}">Simulación {{ s.id }}</option>
+        {% endfor %}
+    </select>
+
+    <button type="submit">Guardar</button>
 </form>
 
-<hr>
-
-<h3>Lista de Reportes</h3>
+<h2>Lista de Reportes</h2>
 <table>
-    <tr><th>ID</th><th>Gráfico</th><th>Estadísticas</th><th>Simulación</th></tr>
-
+    <tr>
+        <th>ID</th><th>Gráfico</th><th>Estadísticas</th><th>Simulación</th>
+    </tr>
     {% for r in reportes %}
     <tr>
         <td>{{ r.id }}</td>
@@ -25,5 +33,4 @@
     </tr>
     {% endfor %}
 </table>
-
 {% endblock %}
