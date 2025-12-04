@@ -4,56 +4,110 @@
 {% block content %}
 <h1>Reportes</h1>
 
-<h2>Crear Reporte</h2>
-<form method="post" action="/reportes/crear">
-    <input type="text" name="titulo" placeholder="Título del reporte" required>
-    <textarea name="descripcion" placeholder="Descripción"></textarea>
-    <input type="datetime-local" name="fecha" required>
+<h2>{{ titulo_form or "Gestionar Reporte" }}</h2>
 
-    <select name="usuario_id">
-        <option value="">(Opcional) Usuario</option>
-        {% for u in usuarios %}
-        <option value="{{ u.idUsuario }}">{{ u.nombre }}</option>
-        {% endfor %}
-    </select>
+<form method="post" action="{{ form_action or '/reportes/crear' }}">
+    {% if reporte_editar %}
+        <input type="hidden" name="idReporte" value="{{ reporte_editar.idReporte }}">
+    {% endif %}
 
-    <select name="credito_id">
-        <option value="">(Opcional) Crédito</option>
-        {% for c in creditos %}
-        <option value="{{ c.idCredito }}">Crédito {{ c.idCredito }}</option>
-        {% endfor %}
-    </select>
+    <div class="form-row">
+        <label for="titulo">Título *</label>
+        <input type="text"
+               id="titulo"
+               name="titulo"
+               required
+               maxlength="200"
+               value="{{ reporte_editar.titulo if reporte_editar else '' }}">
+    </div>
 
-    <select name="simulacion_id">
-        <option value="">(Opcional) Simulación</option>
-        {% for s in simulaciones %}
-        <option value="{{ s.idSimulacion }}">Simulación {{ s.idSimulacion }}</option>
-        {% endfor %}
-    </select>
+    <div class="form-row">
+        <label for="descripcion">Descripción *</label>
+        <textarea id="descripcion"
+                  name="descripcion"
+                  rows="3"
+                  required>{{ reporte_editar.descripcion if reporte_editar else '' }}</textarea>
+    </div>
 
-    <button type="submit">Guardar</button>
+    <div class="form-row">
+        <label for="fecha">Fecha</label>
+        <input type="datetime-local"
+               id="fecha"
+               name="fecha"
+               value="{{ reporte_editar.fecha.isoformat() if reporte_editar and reporte_editar.fecha else '' }}">
+    </div>
+
+    <div class="form-row">
+        <label for="usuario_id">Usuario asociado</label>
+        <select id="usuario_id" name="usuario_id">
+            <option value="">-- Ninguno --</option>
+            {% for u in usuarios %}
+            <option value="{{ u.idUsuario }}"
+                {% if reporte_editar and reporte_editar.usuario_id == u.idUsuario %}selected{% endif %}>
+                {{ u.idUsuario }} - {{ u.nombre }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="form-row">
+        <label for="credito_id">Crédito asociado</label>
+        <select id="credito_id" name="credito_id">
+            <option value="">-- Ninguno --</option>
+            {% for c in creditos %}
+            <option value="{{ c.idCredito }}"
+                {% if reporte_editar and reporte_editar.credito_id == c.idCredito %}selected{% endif %}>
+                {{ c.idCredito }} - {{ c.tipo }} - {{ c.monto }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="form-row">
+        <label for="simulacion_id">Simulación asociada</label>
+        <select id="simulacion_id" name="simulacion_id">
+            <option value="">-- Ninguna --</option>
+            {% for s in simulaciones %}
+            <option value="{{ s.idSimulacion }}"
+                {% if reporte_editar and reporte_editar.simulacion_id == s.idSimulacion %}selected{% endif %}>
+                {{ s.idSimulacion }} - Interés {{ s.interes_id }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="form-actions">
+        <button type="submit">
+            {% if reporte_editar %}Actualizar{% else %}Guardar{% endif %}
+        </button>
+        <a href="/ui/reportes">Limpiar / Nuevo</a>
+    </div>
 </form>
+
+<hr>
 
 <h2>Lista de Reportes</h2>
 <table>
     <tr>
         <th>ID</th>
         <th>Título</th>
-        <th>Descripción</th>
         <th>Fecha</th>
-        <th>Usuario ID</th>
-        <th>Crédito ID</th>
-        <th>Simulación ID</th>
+        <th>Usuario</th>
+        <th>Crédito</th>
+        <th>Simulación</th>
+        <th>Acciones</th>
     </tr>
     {% for r in reportes %}
     <tr>
         <td>{{ r.idReporte }}</td>
         <td>{{ r.titulo }}</td>
-        <td>{{ r.descripcion }}</td>
         <td>{{ r.fecha }}</td>
         <td>{{ r.usuario_id }}</td>
         <td>{{ r.credito_id }}</td>
         <td>{{ r.simulacion_id }}</td>
+        <td>
+            <a href="/ui/reportes/{{ r.idReporte }}">Editar</a>
+        </td>
     </tr>
     {% endfor %}
 </table>

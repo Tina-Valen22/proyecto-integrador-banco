@@ -4,49 +4,50 @@
 {% block content %}
 <h1>Categorías</h1>
 
-<h2>Gestionar Categoría</h2>
+<h2>{{ titulo_form or "Gestionar Categoría" }}</h2>
 
-<form method="post"
-      id="categoriaForm"
-      action="/categorias/crear"
-      onsubmit="return validarCategoria()">
-
-    <!-- ID oculto: si viene, se edita; si no, se crea -->
-    <input type="hidden" name="idCategoria" id="idCategoria">
+<form method="post" action="{{ form_action or '/categorias/crear' }}">
+    {% if categoria_editar %}
+        <input type="hidden" name="idCategoria" value="{{ categoria_editar.idCategoria }}">
+    {% endif %}
 
     <div class="form-row">
         <label for="nombre">Nombre de la categoría *</label>
         <input type="text"
-               name="nombre"
                id="nombre"
-               placeholder="Ej: Hipotecario, Consumo, Vehículo..."
-               required>
+               name="nombre"
+               required
+               maxlength="100"
+               value="{{ categoria_editar.nombre if categoria_editar else '' }}">
     </div>
 
     <div class="form-row">
         <label for="descripcion">Descripción *</label>
-        <textarea name="descripcion"
-                  id="descripcion"
+        <textarea id="descripcion"
+                  name="descripcion"
                   rows="3"
-                  placeholder="Describe brevemente la categoría"
-                  required></textarea>
+                  required>{{ categoria_editar.descripcion if categoria_editar else '' }}</textarea>
     </div>
 
     <div class="form-row">
         <label for="credito_id">Crédito asociado *</label>
-        <select name="credito_id" id="credito_id" required>
+        <select id="credito_id" name="credito_id" required>
             <option value="">-- Seleccione un crédito --</option>
             {% for cr in creditos %}
-            <option value="{{ cr.idCredito }}">
-                Crédito {{ cr.idCredito }} - {{ cr.tipo }} - Monto: {{ cr.monto }}
+            {% set selected_credito = credito_id_actual if categoria_editar else None %}
+            <option value="{{ cr.idCredito }}"
+                {% if selected_credito and selected_credito == cr.idCredito %}selected{% endif %}>
+                {{ cr.idCredito }} - {{ cr.tipo }} - {{ cr.monto }}
             </option>
             {% endfor %}
         </select>
     </div>
 
     <div class="form-actions">
-        <button type="submit">Guardar</button>
-        <button type="button" onclick="prepararNuevaCategoria()">Limpiar / Nuevo</button>
+        <button type="submit">
+            {% if categoria_editar %}Actualizar{% else %}Guardar{% endif %}
+        </button>
+        <a href="/ui/categorias">Limpiar / Nuevo</a>
     </div>
 </form>
 
@@ -75,69 +76,9 @@
             {% endif %}
         </td>
         <td>
-            <button type="button"
-                    onclick="cargarCategoriaDesdeFila(this)"
-                    data-id="{{ c.idCategoria }}"
-                    data-nombre="{{ c.nombre }}"
-                    data-descripcion="{{ c.descripcion or '' }}"
-                    data-credito_id="{{ cat_creditos.get(c.idCategoria, '') }}">
-                Editar
-            </button>
+            <a href="/ui/categorias/{{ c.idCategoria }}">Editar</a>
         </td>
     </tr>
     {% endfor %}
 </table>
-
-<script>
-function prepararNuevaCategoria() {
-    const form = document.getElementById('categoriaForm');
-    form.reset();
-    document.getElementById('idCategoria').value = '';
-    form.action = '/categorias/crear';
-}
-
-function cargarCategoriaDesdeFila(btn) {
-    const form = document.getElementById('categoriaForm');
-
-    const id = btn.dataset.id;
-    const nombre = btn.dataset.nombre || '';
-    const descripcion = btn.dataset.descripcion || '';
-    const creditoId = btn.dataset.credito_id || '';
-
-    document.getElementById('idCategoria').value = id;
-    document.getElementById('nombre').value = nombre;
-    document.getElementById('descripcion').value = descripcion;
-
-    if (creditoId) {
-        document.getElementById('credito_id').value = creditoId;
-    } else {
-        document.getElementById('credito_id').value = '';
-    }
-
-    form.action = '/categorias/actualizar';
-}
-
-function validarCategoria() {
-    const nombre = document.getElementById('nombre').value.trim();
-    const descripcion = document.getElementById('descripcion').value.trim();
-    const creditoId = document.getElementById('credito_id').value;
-
-    if (!nombre) {
-        alert('El nombre de la categoría es obligatorio.');
-        return false;
-    }
-
-    if (!descripcion) {
-        alert('La descripción es obligatoria.');
-        return false;
-    }
-
-    if (!creditoId) {
-        alert('Debe seleccionar un crédito asociado.');
-        return false;
-    }
-
-    return true;
-}
-</script>
 {% endblock %}

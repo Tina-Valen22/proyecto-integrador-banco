@@ -4,70 +4,70 @@
 {% block content %}
 <h1>Usuarios</h1>
 
-<h2>Gestionar Usuario</h2>
+<h2>{{ titulo_form or "Gestionar Usuario" }}</h2>
 
-<form method="post"
-      id="usuarioForm"
-      action="/usuarios/crear"
-      onsubmit="return validarUsuario()">
-
-    <!-- ID oculto: si viene, se edita; si no, se crea -->
-    <input type="hidden" name="idUsuario" id="idUsuario">
+<form method="post" action="{{ form_action or '/usuarios/crear' }}">
+    {% if usuario_editar %}
+        <input type="hidden" name="idUsuario" value="{{ usuario_editar.idUsuario }}">
+    {% endif %}
 
     <div class="form-row">
-        <label for="nombre">Nombre *</label>
+        <label for="nombre">Nombre completo *</label>
         <input type="text"
-               name="nombre"
                id="nombre"
-               placeholder="Nombre completo"
-               required>
+               name="nombre"
+               required
+               maxlength="200"
+               value="{{ usuario_editar.nombre if usuario_editar else '' }}">
     </div>
 
     <div class="form-row">
-        <label for="ingresos_display">Ingresos mensuales (mínimo 100.000) *</label>
-        <!-- Campo visible con formato -->
-        <input type="text"
-               id="ingresos_display"
-               placeholder="Ej: 2.500.000"
-               autocomplete="off">
-        <!-- Campo real que se envía al backend -->
-        <input type="hidden"
+        <label for="ingresos">Ingresos mensuales (COP) *</label>
+        <input type="number"
+               id="ingresos"
                name="ingresos"
-               id="ingresos">
+               required
+               min="100000"
+               step="0.01"
+               value="{{ usuario_editar.ingresos if usuario_editar else '' }}">
     </div>
 
     <div class="form-row">
-        <label for="gastos_display">Gastos mensuales *</label>
-        <input type="text"
-               id="gastos_display"
-               placeholder="Ej: 1.200.000"
-               autocomplete="off">
-        <input type="hidden"
+        <label for="gastos">Gastos mensuales (COP) *</label>
+        <input type="number"
+               id="gastos"
                name="gastos"
-               id="gastos">
+               required
+               min="0"
+               step="0.01"
+               value="{{ usuario_editar.gastos if usuario_editar else '' }}">
     </div>
 
     <div class="form-row">
         <label for="correo">Correo electrónico *</label>
         <input type="email"
-               name="correo"
                id="correo"
-               placeholder="correo@ejemplo.com"
-               required>
+               name="correo"
+               required
+               maxlength="200"
+               value="{{ usuario_editar.correo if usuario_editar else '' }}">
     </div>
 
     <div class="form-row">
         <label for="telefono">Teléfono *</label>
-        <input type="text"
-               name="telefono"
+        <input type="tel"
                id="telefono"
-               placeholder="Número de contacto"
-               required>
+               name="telefono"
+               required
+               maxlength="20"
+               value="{{ usuario_editar.telefono if usuario_editar else '' }}">
     </div>
 
     <div class="form-actions">
-        <button type="submit">Guardar</button>
-        <button type="button" onclick="prepararNuevo()">Limpiar / Nuevo</button>
+        <button type="submit">
+            {% if usuario_editar %}Actualizar{% else %}Guardar{% endif %}
+        </button>
+        <a href="/ui/usuarios">Limpiar / Nuevo</a>
     </div>
 </form>
 
@@ -93,140 +93,9 @@
         <td>{{ u.correo }}</td>
         <td>{{ u.telefono }}</td>
         <td>
-            <button type="button"
-                    onclick="cargarUsuarioDesdeFila(this)"
-                    data-id="{{ u.idUsuario }}"
-                    data-nombre="{{ u.nombre }}"
-                    data-ingresos="{{ u.ingresos }}"
-                    data-gastos="{{ u.gastos }}"
-                    data-correo="{{ u.correo or '' }}"
-                    data-telefono="{{ u.telefono or '' }}">
-                Editar
-            </button>
+            <a href="/ui/usuarios/{{ u.idUsuario }}">Editar</a>
         </td>
     </tr>
     {% endfor %}
 </table>
-
-<script>
-// ---------- Formato dinero: enteros con separador de miles ----------
-function configurarCampoDineroEntero(idDisplay, idHidden) {
-    const display = document.getElementById(idDisplay);
-    const hidden = document.getElementById(idHidden);
-
-    display.addEventListener('input', () => {
-        // Solo dejar dígitos
-        let soloDigitos = display.value.replace(/\D/g, '');
-
-        if (soloDigitos.length === 0) {
-            hidden.value = '';
-            display.value = '';
-            return;
-        }
-
-        // Convertir a entero
-        const num = parseInt(soloDigitos, 10);
-        if (isNaN(num)) {
-            hidden.value = '';
-            return;
-        }
-
-        hidden.value = num.toString(); // esto va al backend (como número)
-        // Formato con miles, sin decimales
-        display.value = num.toLocaleString('es-CO');
-    });
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    configurarCampoDineroEntero('ingresos_display', 'ingresos');
-    configurarCampoDineroEntero('gastos_display', 'gastos');
-});
-
-// ---------- Lógica de formulario (nuevo/editar) ----------
-function prepararNuevo() {
-    const form = document.getElementById('usuarioForm');
-    form.reset();
-
-    document.getElementById('idUsuario').value = '';
-    document.getElementById('ingresos').value = '';
-    document.getElementById('gastos').value = '';
-    document.getElementById('ingresos_display').value = '';
-    document.getElementById('gastos_display').value = '';
-
-    form.action = '/usuarios/crear';
-}
-
-function cargarUsuarioDesdeFila(btn) {
-    const form = document.getElementById('usuarioForm');
-
-    const id = btn.dataset.id;
-    const nombre = btn.dataset.nombre;
-    const ingresos = parseFloat(btn.dataset.ingresos || '0');
-    const gastos = parseFloat(btn.dataset.gastos || '0');
-    const correo = btn.dataset.correo || '';
-    const telefono = btn.dataset.telefono || '';
-
-    document.getElementById('idUsuario').value = id;
-    document.getElementById('nombre').value = nombre;
-
-    // guardamos el valor "real" en los hidden (redondeado por si viene con .0)
-    const ingresosInt = Math.round(ingresos);
-    const gastosInt = Math.round(gastos);
-
-    document.getElementById('ingresos').value = ingresosInt.toString();
-    document.getElementById('gastos').value = gastosInt.toString();
-
-    // mostramos formateado en los display
-    document.getElementById('ingresos_display').value =
-        ingresosInt.toLocaleString('es-CO');
-    document.getElementById('gastos_display').value =
-        gastosInt.toLocaleString('es-CO');
-
-    document.getElementById('correo').value = correo;
-    document.getElementById('telefono').value = telefono;
-
-    // cuando hay ID, el formulario actualiza en vez de crear
-    form.action = '/usuarios/actualizar';
-}
-
-// ---------- Validaciones antes de enviar ----------
-function validarUsuario() {
-    const nombre = document.getElementById('nombre').value.trim();
-    const ingresosHidden = document.getElementById('ingresos').value;
-    const gastosHidden = document.getElementById('gastos').value;
-    const correo = document.getElementById('correo').value.trim();
-    const telefono = document.getElementById('telefono').value.trim();
-
-    if (!nombre) {
-        alert('El nombre es obligatorio.');
-        return false;
-    }
-
-    if (!correo) {
-        alert('El correo es obligatorio.');
-        return false;
-    }
-
-    if (!telefono) {
-        alert('El teléfono es obligatorio.');
-        return false;
-    }
-
-    const ingresosNum = parseInt(ingresosHidden, 10);
-    const gastosNum = parseInt(gastosHidden, 10);
-
-    if (isNaN(ingresosNum) || ingresosNum < 100000) {
-        alert('Los ingresos son obligatorios y deben ser al menos 100.000.');
-        return false;
-    }
-
-    if (isNaN(gastosNum) || gastosNum < 0) {
-        alert('Los gastos son obligatorios y no pueden ser negativos.');
-        return false;
-    }
-
-    // Todo ok
-    return true;
-}
-</script>
 {% endblock %}
