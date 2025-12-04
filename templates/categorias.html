@@ -15,15 +15,15 @@
 <form method="post" action="/categorias/vincular">
     <select name="credito_id" required>
         <option value="">Seleccione crédito</option>
-        {% for c in creditos %}
-        <option value="{{ c.id }}">Crédito {{ c.id }}</option>
+        {% for cr in creditos %}
+        <option value="{{ cr.idCredito }}">Crédito {{ cr.idCredito }}</option>
         {% endfor %}
     </select>
 
     <select name="categoria_id" required>
         <option value="">Seleccione categoría</option>
         {% for cat in categorias %}
-        <option value="{{ cat.id }}">{{ cat.nombre }}</option>
+        <option value="{{ cat.idCategoria }}">{{ cat.nombre }}</option>
         {% endfor %}
     </select>
 
@@ -37,7 +37,7 @@
     </tr>
     {% for c in categorias %}
     <tr>
-        <td>{{ c.id }}</td>
+        <td>{{ c.idCategoria }}</td>
         <td>{{ c.nombre }}</td>
         <td>{{ c.descripcion }}</td>
     </tr>

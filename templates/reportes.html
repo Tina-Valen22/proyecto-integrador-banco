@@ -6,13 +6,28 @@
 
 <h2>Crear Reporte</h2>
 <form method="post" action="/reportes/crear">
-    <input type="text" name="grafico" placeholder="Nombre del gráfico" required>
-    <textarea name="estadisticas" placeholder="Estadísticas" required></textarea>
+    <input type="text" name="titulo" placeholder="Título del reporte" required>
+    <textarea name="descripcion" placeholder="Descripción"></textarea>
+    <input type="datetime-local" name="fecha" required>
 
-    <select name="simulacion_id" required>
-        <option value="">Seleccione simulación</option>
+    <select name="usuario_id">
+        <option value="">(Opcional) Usuario</option>
+        {% for u in usuarios %}
+        <option value="{{ u.idUsuario }}">{{ u.nombre }}</option>
+        {% endfor %}
+    </select>
+
+    <select name="credito_id">
+        <option value="">(Opcional) Crédito</option>
+        {% for c in creditos %}
+        <option value="{{ c.idCredito }}">Crédito {{ c.idCredito }}</option>
+        {% endfor %}
+    </select>
+
+    <select name="simulacion_id">
+        <option value="">(Opcional) Simulación</option>
         {% for s in simulaciones %}
-        <option value="{{ s.id }}">Simulación {{ s.id }}</option>
+        <option value="{{ s.idSimulacion }}">Simulación {{ s.idSimulacion }}</option>
         {% endfor %}
     </select>
 
@@ -22,13 +37,22 @@
 <h2>Lista de Reportes</h2>
 <table>
     <tr>
-        <th>ID</th><th>Gráfico</th><th>Estadísticas</th><th>Simulación</th>
+        <th>ID</th>
+        <th>Título</th>
+        <th>Descripción</th>
+        <th>Fecha</th>
+        <th>Usuario ID</th>
+        <th>Crédito ID</th>
+        <th>Simulación ID</th>
     </tr>
     {% for r in reportes %}
     <tr>
-        <td>{{ r.id }}</td>
-        <td>{{ r.grafico }}</td>
-        <td>{{ r.estadisticas }}</td>
+        <td>{{ r.idReporte }}</td>
+        <td>{{ r.titulo }}</td>
+        <td>{{ r.descripcion }}</td>
+        <td>{{ r.fecha }}</td>
+        <td>{{ r.usuario_id }}</td>
+        <td>{{ r.credito_id }}</td>
         <td>{{ r.simulacion_id }}</td>
     </tr>
     {% endfor %}

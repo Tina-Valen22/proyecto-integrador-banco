@@ -12,7 +12,7 @@
     <select name="credito_id" required>
         <option value="">Seleccione crédito</option>
         {% for c in creditos %}
-        <option value="{{ c.id }}">Crédito {{ c.id }}</option>
+        <option value="{{ c.idCredito }}">Crédito {{ c.idCredito }}</option>
         {% endfor %}
     </select>
 
@@ -26,7 +26,7 @@
     </tr>
     {% for i in intereses %}
     <tr>
-        <td>{{ i.id }}</td>
+        <td>{{ i.idInteres }}</td>
         <td>{{ i.tasa }}</td>
         <td>{{ i.tipo }}</td>
         <td>{{ i.credito_id }}</td>

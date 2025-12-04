@@ -7,22 +7,31 @@
 <h2>Gestionar Usuario</h2>
 <form method="post" action="/usuarios/crear">
     <input type="text" name="nombre" placeholder="Nombre" required>
-    <input type="number" name="ingresos" placeholder="Ingresos" required>
-    <input type="number" name="gastos" placeholder="Gastos" required>
+    <input type="number" step="0.01" name="ingresos" placeholder="Ingresos" required>
+    <input type="number" step="0.01" name="gastos" placeholder="Gastos" required>
+    <input type="email" name="correo" placeholder="Correo electrónico">
+    <input type="text" name="telefono" placeholder="Teléfono">
     <button type="submit">Guardar</button>
 </form>
 
 <h2>Lista de Usuarios</h2>
 <table>
     <tr>
-        <th>ID</th><th>Nombre</th><th>Ingresos</th><th>Gastos</th>
+        <th>ID</th>
+        <th>Nombre</th>
+        <th>Ingresos</th>
+        <th>Gastos</th>
+        <th>Correo</th>
+        <th>Teléfono</th>
     </tr>
     {% for u in usuarios %}
     <tr>
-        <td>{{ u.id }}</td>
+        <td>{{ u.idUsuario }}</td>
         <td>{{ u.nombre }}</td>
         <td>{{ u.ingresos }}</td>
         <td>{{ u.gastos }}</td>
+        <td>{{ u.correo }}</td>
+        <td>{{ u.telefono }}</td>
     </tr>
     {% endfor %}
 </table>

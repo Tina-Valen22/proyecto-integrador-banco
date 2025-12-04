@@ -1,10 +1,13 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Depends
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi.responses import HTMLResponse
 
-from database import create_db_and_tables
+from sqlmodel import Session, select
 
-# Routers
+from database import create_db_and_tables, get_session
+
+# Routers (API JSON)
 from routers import (
     usuario_router,
     credito_router,
@@ -14,6 +17,16 @@ from routers import (
     reporte_router,
     historial_router,
 )
+
+# Modelos
+from models.usuario import Usuario
+from models.credito import Credito
+from models.categoria import Categoria
+from models.interes import Interes
+from models.simulacion import Simulacion
+from models.reporte import Reporte
+from models.historial import Historial
+
 
 # -----------------------------
 # Inicialización de la app
@@ -31,7 +44,6 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 
-
 # -----------------------------
 # Eventos de ciclo de vida
 # -----------------------------
@@ -47,9 +59,11 @@ def on_startup():
 # -----------------------------
 # Rutas base (vista HTML)
 # -----------------------------
-@app.get("/")
+@app.get("/", response_class=HTMLResponse)
 def read_root(request: Request):
+    # Tu pantalla de inicio está en home.html (que extiende base.html)
     return templates.TemplateResponse("home.html", {"request": request})
+
 
 @app.get("/health")
 def health_check():
@@ -60,7 +74,131 @@ def health_check():
 
 
 # -----------------------------
-# Inclusión de routers
+# RUTAS UI (HTML) - Vistas
+# -----------------------------
+
+@app.get("/ui/usuarios", response_class=HTMLResponse)
+def ui_usuarios(
+    request: Request,
+    session: Session = Depends(get_session),
+):
+    usuarios = session.exec(select(Usuario)).all()
+    return templates.TemplateResponse(
+        "usuarios.html",
+        {
+            "request": request,
+            "usuarios": usuarios,
+        },
+    )
+
+
+@app.get("/ui/creditos", response_class=HTMLResponse)
+def ui_creditos(
+    request: Request,
+    session: Session = Depends(get_session),
+):
+    creditos = session.exec(select(Credito)).all()
+    usuarios = session.exec(select(Usuario)).all()
+    return templates.TemplateResponse(
+        "creditos.html",
+        {
+            "request": request,
+            "creditos": creditos,
+            "usuarios": usuarios,
+        },
+    )
+
+
+@app.get("/ui/categorias", response_class=HTMLResponse)
+def ui_categorias(
+    request: Request,
+    session: Session = Depends(get_session),
+):
+    categorias = session.exec(select(Categoria)).all()
+    creditos = session.exec(select(Credito)).all()
+    return templates.TemplateResponse(
+        "categorias.html",
+        {
+            "request": request,
+            "categorias": categorias,
+            "creditos": creditos,
+        },
+    )
+
+
+@app.get("/ui/intereses", response_class=HTMLResponse)
+def ui_intereses(
+    request: Request,
+    session: Session = Depends(get_session),
+):
+    intereses = session.exec(select(Interes)).all()
+    creditos = session.exec(select(Credito)).all()
+    return templates.TemplateResponse(
+        "intereses.html",
+        {
+            "request": request,
+            "intereses": intereses,
+            "creditos": creditos,
+        },
+    )
+
+
+@app.get("/ui/simulaciones", response_class=HTMLResponse)
+def ui_simulaciones(
+    request: Request,
+    session: Session = Depends(get_session),
+):
+    simulaciones = session.exec(select(Simulacion)).all()
+    intereses = session.exec(select(Interes)).all()
+    return templates.TemplateResponse(
+        "simulaciones.html",
+        {
+            "request": request,
+            "simulaciones": simulaciones,
+            "intereses": intereses,
+        },
+    )
+
+
+@app.get("/ui/reportes", response_class=HTMLResponse)
+def ui_reportes(
+    request: Request,
+    session: Session = Depends(get_session),
+):
+    reportes = session.exec(select(Reporte)).all()
+    usuarios = session.exec(select(Usuario)).all()
+    creditos = session.exec(select(Credito)).all()
+    simulaciones = session.exec(select(Simulacion)).all()
+
+    return templates.TemplateResponse(
+        "reportes.html",
+        {
+            "request": request,
+            "reportes": reportes,
+            "usuarios": usuarios,
+            "creditos": creditos,
+            "simulaciones": simulaciones,
+        },
+    )
+
+
+@app.get("/ui/historial", response_class=HTMLResponse)
+def ui_historial(
+    request: Request,
+    session: Session = Depends(get_session),
+):
+    historial = session.exec(select(Historial)).all()
+    return templates.TemplateResponse(
+        "historial.html",
+        {
+            "request": request,
+            "historial": historial,
+        },
+    )
+
+
+# -----------------------------
+# Inclusión de routers (API JSON)
 # -----------------------------
 app.include_router(usuario_router.router)
 app.include_router(credito_router.router)
@@ -74,7 +212,6 @@ app.include_router(historial_router.router)
 # -----------------------------
 # Punto de entrada opcional
 # -----------------------------
-# Esto es útil si quieres ejecutar: python main.py
 if __name__ == "__main__":
     import uvicorn
 

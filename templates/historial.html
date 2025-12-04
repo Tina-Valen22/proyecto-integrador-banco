@@ -6,15 +6,20 @@
 
 <table>
     <tr>
-        <th>ID</th><th>Acción</th><th>Detalle</th><th>Usuario</th>
+        <th>ID</th>
+        <th>Entidad</th>
+        <th>Acción</th>
+        <th>Descripción</th>
+        <th>Fecha</th>
     </tr>
 
-    {% for h in logs %}
+    {% for h in historial %}
     <tr>
-        <td>{{ h.log.id }}</td>
-        <td>{{ h.log.accion }}</td>
-        <td>{{ h.log.detalle }}</td>
-        <td>{{ h.usuario_nombre }}</td>
+        <td>{{ h.idHistorial }}</td>
+        <td>{{ h.entidad }}</td>
+        <td>{{ h.accion }}</td>
+        <td>{{ h.descripcion }}</td>
+        <td>{{ h.fecha }}</td>
     </tr>
     {% endfor %}
 </table>
