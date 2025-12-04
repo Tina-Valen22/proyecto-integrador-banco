@@ -1,7 +1,5 @@
-from __future__ import annotations
-
 from typing import Optional
-from sqlmodel import SQLModel, Field, Relationship
+from sqlmodel import SQLModel, Field
 
 
 class Simulacion(SQLModel, table=True):
@@ -10,7 +8,4 @@ class Simulacion(SQLModel, table=True):
     interesTotal: float
     saldoFinal: float
 
-    # Relación con Interes
     interes_id: int = Field(foreign_key="interes.idInteres")
-
-    interes: Optional["Interes"] = Relationship(back_populates="simulaciones")

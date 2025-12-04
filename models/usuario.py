@@ -1,7 +1,5 @@
-from __future__ import annotations
-
-from typing import Optional, List
-from sqlmodel import SQLModel, Field, Relationship
+from typing import Optional
+from sqlmodel import SQLModel, Field
 
 
 class Usuario(SQLModel, table=True):
@@ -11,6 +9,3 @@ class Usuario(SQLModel, table=True):
     gastos: float
     correo: Optional[str] = None
     telefono: Optional[str] = None
-
-    # Relación 1:N con Credito
-    creditos: List["Credito"] = Relationship(back_populates="usuario")
