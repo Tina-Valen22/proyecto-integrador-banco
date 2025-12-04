@@ -22,6 +22,7 @@ from routers import (
 from models.usuario import Usuario
 from models.credito import Credito
 from models.categoria import Categoria
+from models.credito_categoria import CreditoCategoria
 from models.interes import Interes
 from models.simulacion import Simulacion
 from models.reporte import Reporte
