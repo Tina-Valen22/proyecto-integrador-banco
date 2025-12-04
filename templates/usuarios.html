@@ -7,13 +7,9 @@
 
 <h2>Crear / Editar Usuario</h2>
 
-<!--
-  IMPORTANTE:
-  - method="post"
-  - enctype="multipart/form-data" para poder enviar archivos
-  - action="/usuarios/crear" por defecto; si estás editando, puedes cambiarlo desde la vista
--->
-<form method="post" action="{{ form_action or '/usuarios/crear' }}" enctype="multipart/form-data">
+<form method="post"
+      action="{{ form_action or '/usuarios/crear' }}"
+      enctype="multipart/form-data">
     <div>
         <label for="idUsuario">ID (solo para edición):</label>
         <input type="number" id="idUsuario" name="idUsuario"
@@ -56,7 +52,14 @@
         <label for="cedula">Cédula (PDF o JPG)</label>
         <input type="file" id="cedula" name="cedula" accept=".pdf,.jpg,.jpeg">
         {% if usuario and usuario.cedula %}
-            <p>Archivo actual: {{ usuario.cedula }}</p>
+            <p>
+                Archivo actual:
+                {# mostramos solo el nombre del archivo #}
+                {% set partes = usuario.cedula.split('/') %}
+                {{ partes[-1] }}
+                -
+                <a href="/{{ usuario.cedula }}" target="_blank">Ver archivo</a>
+            </p>
         {% endif %}
     </div>
 
@@ -78,7 +81,7 @@
             <th>Gastos</th>
             <th>Correo</th>
             <th>Teléfono</th>
-            <th>Cédula</th>
+            <th>Cédula (archivo)</th>
         </tr>
     </thead>
     <tbody>
@@ -92,7 +95,11 @@
             <td>{{ u.telefono }}</td>
             <td>
                 {% if u.cedula %}
-                    {{ u.cedula }}
+                    {# sacamos solo el nombre del archivo, sin la ruta completa #}
+                    {% set partes = u.cedula.split('/') %}
+                    {{ partes[-1] }}
+                    -
+                    <a href="/{{ u.cedula }}" target="_blank">Ver</a>
                 {% else %}
                     -
                 {% endif %}
