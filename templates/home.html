@@ -1,8 +1,47 @@
 {% extends "base.html" %}
 
-{% block title %}Inicio{% endblock %}
+{% block title %}Bienvenido - Banco Ovalle{% endblock %}
 
 {% block content %}
-<h1>Bienvenido al Sistema de Banco</h1>
-<p>Usa el menú superior para navegar entre las opciones.</p>
+<section class="hero-banco">
+    <div class="hero-icono">
+        🏦
+    </div>
+
+    <div class="hero-texto">
+        <h1>Bienvenido al <span>Banco Ovalle</span></h1>
+        <p>
+            Tu aliado financiero para planear, simular y gestionar tus créditos de manera
+            sencilla, rápida y segura.
+        </p>
+
+        <div class="hero-botones">
+            <a href="/ui/usuarios" class="btn-primario">Gestionar Usuarios</a>
+            <a href="/ui/creditos" class="btn-secundario">Ver Créditos</a>
+            <a href="/docs" class="btn-link">Ver API (Swagger)</a>
+        </div>
+    </div>
+</section>
+
+<section class="hero-info">
+    <h2>¿Qué puedes hacer en el Banco Ovalle?</h2>
+    <div class="hero-grid">
+        <div class="card-info">
+            <h3>📋 Usuarios</h3>
+            <p>Registra y administra la información básica de tus clientes.</p>
+        </div>
+        <div class="card-info">
+            <h3>💳 Créditos</h3>
+            <p>Crea créditos, define montos, plazos y tipos, y vincúlalos a tus usuarios.</p>
+        </div>
+        <div class="card-info">
+            <h3>📈 Intereses y Simulaciones</h3>
+            <p>Configura tasas de interés y realiza simulaciones para proyectar cuotas y saldos.</p>
+        </div>
+        <div class="card-info">
+            <h3>📊 Reportes e Historial</h3>
+            <p>Consulta reportes generados y revisa el historial de acciones realizadas.</p>
+        </div>
+    </div>
+</section>
 {% endblock %}

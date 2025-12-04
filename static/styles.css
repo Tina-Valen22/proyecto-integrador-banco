@@ -63,3 +63,103 @@ th {
 td {
     padding: 6px;
 }
+.hero-banco {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2rem;
+    padding: 2.5rem;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #c8102e, #004b8d);
+    color: #fff;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    margin-bottom: 2.5rem;
+}
+
+.hero-icono {
+    font-size: 4rem;
+}
+
+.hero-texto h1 {
+    font-size: 2.2rem;
+    margin-bottom: 0.5rem;
+}
+
+.hero-texto h1 span {
+    font-weight: bold;
+}
+
+.hero-texto p {
+    font-size: 1rem;
+    margin-bottom: 1.5rem;
+    max-width: 480px;
+}
+
+.hero-botones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.btn-primario,
+.btn-secundario,
+.btn-link {
+    padding: 0.6rem 1.3rem;
+    border-radius: 999px;
+    border: none;
+    cursor: pointer;
+    font-size: 0.95rem;
+    text-decoration: none;
+    display: inline-block;
+    text-align: center;
+}
+
+.btn-primario {
+    background: #ffffff;
+    color: #c8102e;
+    font-weight: bold;
+}
+
+.btn-secundario {
+    background: transparent;
+    border: 1px solid #ffffff;
+    color: #ffffff;
+}
+
+.btn-link {
+    background: transparent;
+    color: #ffffff;
+    text-decoration: underline;
+}
+
+.btn-primario:hover,
+.btn-secundario:hover,
+.btn-link:hover {
+    opacity: 0.9;
+}
+
+.hero-info h2 {
+    margin-bottom: 1.5rem;
+}
+
+.hero-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+}
+
+.card-info {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 1rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.card-info h3 {
+    margin-bottom: 0.5rem;
+}
+
+.card-info p {
+    font-size: 0.9rem;
+    color: #333;
+}
