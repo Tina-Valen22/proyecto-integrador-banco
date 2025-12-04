@@ -2,10 +2,12 @@ from sqlmodel import SQLModel, Field, Relationship
 from typing import Optional, List
 
 class Usuario(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
+    idUsuario: Optional[int] = Field(default=None, primary_key=True)
     nombre: str
     ingresos: float
     gastos: float
+    correo: Optional[str] = None
+    telefono: Optional[str] = None
 
+    # Relación 1:N con Credito
     creditos: List["Credito"] = Relationship(back_populates="usuario")
-    historial: List["Historial"] = Relationship(back_populates="usuario")

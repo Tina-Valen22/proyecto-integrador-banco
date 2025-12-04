@@ -1,45 +1,84 @@
-from fastapi import FastAPI, Request, Form
-from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
-
-from routers.usuario_router import router as usuario_router
-from routers.credito_router import router as credito_router
-from routers.categoria_router import router as categoria_router
-from routers.interes_router import router as interes_router
-from routers.simulacion_router import router as simulacion_router
-from routers.reporte_router import router as reporte_router
-from routers.historial_router import router as historial_router
+from fastapi.templating import Jinja2Templates
 
 from database import create_db_and_tables
 
+# Routers
+from routers import (
+    usuario_router,
+    credito_router,
+    interes_router,
+    categoria_router,
+    simulacion_router,
+    reporte_router,
+    historial_router,
+)
 
-app = FastAPI(title="Banco - Sistema de Simulación")
+# -----------------------------
+# Inicialización de la app
+# -----------------------------
+app = FastAPI(
+    title="API Integrador Banco",
+    description="Proyecto integrador de banco con FastAPI y SQLModel",
+    version="1.0.0",
+)
 
-# Templates
+# -----------------------------
+# Templates y archivos estáticos
+# -----------------------------
+app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-# Static
-app.mount("/static", StaticFiles(directory="static"), name="static")
 
-
-# Crear BD al iniciar
+# -----------------------------
+# Eventos de ciclo de vida
+# -----------------------------
 @app.on_event("startup")
-def startup_event():
+def on_startup():
+    """
+    Evento de arranque de la aplicación.
+    Crea la base de datos y las tablas, y carga datos iniciales si es necesario.
+    """
     create_db_and_tables()
 
 
-# Página principal (home)
-@app.get("/", response_class=HTMLResponse)
-def home(request: Request):
-    return templates.TemplateResponse("home.html", {"request": request})
+# -----------------------------
+# Rutas base (vista HTML)
+# -----------------------------
+@app.get("/")
+def read_root(request: Request):
+    """
+    Página principal HTML (usa templates/index.html).
+    """
+    return templates.TemplateResponse("index.html", {"request": request})
 
 
-# Routers
-app.include_router(usuario_router)
-app.include_router(credito_router)
-app.include_router(categoria_router)
-app.include_router(interes_router)
-app.include_router(simulacion_router)
-app.include_router(reporte_router)
-app.include_router(historial_router)
+@app.get("/health")
+def health_check():
+    """
+    Endpoint simple de salud para verificar que la API está arriba.
+    """
+    return {"status": "ok", "message": "API Integrador Banco funcionando"}
+
+
+# -----------------------------
+# Inclusión de routers
+# -----------------------------
+app.include_router(usuario_router.router)
+app.include_router(credito_router.router)
+app.include_router(interes_router.router)
+app.include_router(categoria_router.router)
+app.include_router(simulacion_router.router)
+app.include_router(reporte_router.router)
+app.include_router(historial_router.router)
+
+
+# -----------------------------
+# Punto de entrada opcional
+# -----------------------------
+# Esto es útil si quieres ejecutar: python main.py
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

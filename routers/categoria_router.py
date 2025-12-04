@@ -1,92 +1,332 @@
 # routers/categoria_router.py
-from fastapi import APIRouter, Depends, HTTPException, Request, Form
-from fastapi.templating import Jinja2Templates
-from fastapi.responses import RedirectResponse
+
+from datetime import datetime
+from typing import List, Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import Session, select
+
 from database import get_session
 from models.categoria import Categoria
-from models.credito_categoria import CreditoCategoria
 from models.credito import Credito
+from models.credito_categoria import CreditoCategoria
 from models.historial import Historial
 
-templates = Jinja2Templates(directory="templates")
-router = APIRouter(prefix="/categorias", tags=["Categorias"])
+router = APIRouter(prefix="/categorias", tags=["Categorías"])
 
 
-@router.get("/")
-def ver_categorias(request: Request, session: Session = Depends(get_session)):
-    categorias = session.exec(select(Categoria)).all()
-    creditos = session.exec(select(Credito)).all()
-    return templates.TemplateResponse("categorias.html",
-        {"request": request, "categorias": categorias, "creditos": creditos}
-    )
-
-
-@router.post("/crear")
+# -----------------------------
+# CREATE
+# -----------------------------
+@router.post("/", response_model=Categoria)
 def crear_categoria(
-    nombre: str = Form(...),
-    descripcion: str = Form(...),
-    session: Session = Depends(get_session)
-):
-    categoria = Categoria(nombre=nombre, descripcion=descripcion)
+    categoria: Categoria,
+    session: Session = Depends(get_session),
+) -> Categoria:
+    """
+    Crea una categoría y registra la acción en el historial.
+    """
+    # Podrías validar que no exista otra con el mismo nombre
+    existente = session.exec(
+        select(Categoria).where(Categoria.nombre == categoria.nombre)
+    ).first()
+    if existente:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Ya existe una categoría con el nombre '{categoria.nombre}'",
+        )
+
     session.add(categoria)
     session.commit()
     session.refresh(categoria)
 
     h = Historial(
+        entidad="Categoría",
         accion="CREAR",
-        detalle=f"Categoría '{categoria.nombre}' creada",
-        usuario_id=None
+        descripcion=f"Categoría '{categoria.nombre}' creada con id {categoria.idCategoria}",
+        fecha=datetime.now(),
     )
-
     session.add(h)
     session.commit()
 
-    return RedirectResponse(url="/categorias", status_code=303)
+    return categoria
 
 
-@router.post("/vincular")
-def vincular_credito_categoria(
-    credito_id: int = Form(...),
-    categoria_id: int = Form(...),
-    session: Session = Depends(get_session)
-):
-    credito = session.get(Credito, credito_id)
+# -----------------------------
+# READ - LISTAR / FILTRAR
+# -----------------------------
+@router.get("/", response_model=List[Categoria])
+def listar_categorias(
+    session: Session = Depends(get_session),
+    nombre: Optional[str] = Query(
+        None, description="Filtrar por nombre (contiene)"
+    ),
+) -> List[Categoria]:
+    """
+    Lista todas las categorías, con filtro opcional por nombre.
+    """
+    query = select(Categoria)
+
+    if nombre:
+        query = query.where(Categoria.nombre.contains(nombre))
+
+    categorias = session.exec(query).all()
+    return categorias
+
+
+# -----------------------------
+# READ - OBTENER POR ID
+# -----------------------------
+@router.get("/{categoria_id}", response_model=Categoria)
+def obtener_categoria(
+    categoria_id: int,
+    session: Session = Depends(get_session),
+) -> Categoria:
+    """
+    Obtiene una categoría por su id.
+    """
     categoria = session.get(Categoria, categoria_id)
-
-    if not credito or not categoria:
-        raise HTTPException(status_code=404, detail="Crédito o Categoría no encontrados")
-
-    link = CreditoCategoria(credito_id=credito_id, categoria_id=categoria_id)
-    session.add(link)
-    session.commit()
-
-    h = Historial(
-        accion="VINCULAR",
-        detalle=f"Crédito {credito_id} vinculado a categoría {categoria.nombre}",
-        usuario_id=credito.usuario_id
-    )
-
-    session.add(h)
-    session.commit()
-
-    return RedirectResponse(url="/categorias", status_code=303)
+    if not categoria:
+        raise HTTPException(status_code=404, detail="Categoría no encontrada")
+    return categoria
 
 
-@router.post("/eliminar/{categoria_id}")
-def eliminar_categoria(categoria_id: int, session: Session = Depends(get_session)):
+# -----------------------------
+# UPDATE COMPLETO (PUT)
+# -----------------------------
+@router.put("/{categoria_id}", response_model=Categoria)
+def actualizar_categoria(
+    categoria_id: int,
+    datos: Categoria,
+    session: Session = Depends(get_session),
+) -> Categoria:
+    """
+    Reemplaza completamente los datos de una categoría.
+    """
     categoria = session.get(Categoria, categoria_id)
     if not categoria:
         raise HTTPException(status_code=404, detail="Categoría no encontrada")
 
-    h = Historial(
-        accion="ELIMINAR",
-        detalle=f"Categoría '{categoria.nombre}' eliminada",
-        usuario_id=None
-    )
+    # Validar nombre duplicado si cambia
+    if datos.nombre != categoria.nombre:
+        existente = session.exec(
+            select(Categoria).where(Categoria.nombre == datos.nombre)
+        ).first()
+        if existente:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Ya existe una categoría con el nombre '{datos.nombre}'",
+            )
 
+    categoria.nombre = datos.nombre
+    categoria.descripcion = datos.descripcion
+
+    session.commit()
+    session.refresh(categoria)
+
+    h = Historial(
+        entidad="Categoría",
+        accion="ACTUALIZAR",
+        descripcion=(
+            f"Categoría id {categoria.idCategoria} actualizada "
+            f"('{categoria.nombre}')"
+        ),
+        fecha=datetime.now(),
+    )
     session.add(h)
+    session.commit()
+
+    return categoria
+
+
+# -----------------------------
+# UPDATE PARCIAL (PATCH)
+# -----------------------------
+@router.patch("/{categoria_id}", response_model=Categoria)
+def actualizar_categoria_parcial(
+    categoria_id: int,
+    nombre: Optional[str] = None,
+    descripcion: Optional[str] = None,
+    session: Session = Depends(get_session),
+) -> Categoria:
+    """
+    Actualiza parcialmente una categoría. Solo se modifican los campos enviados.
+    """
+    categoria = session.get(Categoria, categoria_id)
+    if not categoria:
+        raise HTTPException(status_code=404, detail="Categoría no encontrada")
+
+    cambios = []
+
+    if nombre is not None and nombre != categoria.nombre:
+        existente = session.exec(
+            select(Categoria).where(Categoria.nombre == nombre)
+        ).first()
+        if existente:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Ya existe una categoría con el nombre '{nombre}'",
+            )
+        categoria.nombre = nombre
+        cambios.append("nombre")
+
+    if descripcion is not None:
+        categoria.descripcion = descripcion
+        cambios.append("descripcion")
+
+    if cambios:
+        session.commit()
+        session.refresh(categoria)
+
+        detalle_cambios = ", ".join(cambios)
+        h = Historial(
+            entidad="Categoría",
+            accion="ACTUALIZAR_PARCIAL",
+            descripcion=(
+                f"Categoría id {categoria.idCategoria} actualizada parcialmente. "
+                f"Campos modificados: {detalle_cambios}"
+            ),
+            fecha=datetime.now(),
+        )
+        session.add(h)
+        session.commit()
+
+    return categoria
+
+
+# -----------------------------
+# DELETE
+# -----------------------------
+@router.delete("/{categoria_id}")
+def eliminar_categoria(
+    categoria_id: int,
+    session: Session = Depends(get_session),
+):
+    """
+    Elimina una categoría, sus relaciones con créditos,
+    y registra la acción en el historial.
+    """
+    categoria = session.get(Categoria, categoria_id)
+    if not categoria:
+        raise HTTPException(status_code=404, detail="Categoría no encontrada")
+
+    # Eliminar relaciones en la tabla intermedia
+    relaciones = session.exec(
+        select(CreditoCategoria).where(CreditoCategoria.categoria_id == categoria_id)
+    ).all()
+    for rel in relaciones:
+        session.delete(rel)
+
+    h = Historial(
+        entidad="Categoría",
+        accion="ELIMINAR",
+        descripcion=f"Categoría '{categoria.nombre}' (id {categoria.idCategoria}) eliminada",
+        fecha=datetime.now(),
+    )
+    session.add(h)
+
     session.delete(categoria)
     session.commit()
 
-    return RedirectResponse(url="/categorias", status_code=303)
+    return {"mensaje": "Categoría y relaciones asociadas eliminadas correctamente"}
+
+
+# -----------------------------
+# ASIGNAR CATEGORÍA A CRÉDITO
+# -----------------------------
+@router.post("/{categoria_id}/creditos/{credito_id}")
+def asignar_categoria_a_credito(
+    categoria_id: int,
+    credito_id: int,
+    session: Session = Depends(get_session),
+):
+    """
+    Asocia una categoría a un crédito (relación N:M).
+    """
+    categoria = session.get(Categoria, categoria_id)
+    if not categoria:
+        raise HTTPException(status_code=404, detail="Categoría no encontrada")
+
+    credito = session.get(Credito, credito_id)
+    if not credito:
+        raise HTTPException(status_code=404, detail="Crédito no encontrado")
+
+    # Verificar si ya existe la relación
+    existente = session.exec(
+        select(CreditoCategoria).where(
+            CreditoCategoria.categoria_id == categoria_id,
+            CreditoCategoria.credito_id == credito_id,
+        )
+    ).first()
+
+    if existente:
+        raise HTTPException(
+            status_code=400,
+            detail="La categoría ya está asociada a este crédito",
+        )
+
+    relacion = CreditoCategoria(
+        categoria_id=categoria_id,
+        credito_id=credito_id,
+    )
+    session.add(relacion)
+
+    h = Historial(
+        entidad="Categoría-Crédito",
+        accion="ASIGNAR",
+        descripcion=(
+            f"Categoría '{categoria.nombre}' (id {categoria.idCategoria}) "
+            f"asignada al crédito id {credito.idCredito}"
+        ),
+        fecha=datetime.now(),
+    )
+    session.add(h)
+
+    session.commit()
+
+    return {"mensaje": "Categoría asignada al crédito correctamente"}
+
+
+# -----------------------------
+# QUITAR CATEGORÍA DE CRÉDITO
+# -----------------------------
+@router.delete("/{categoria_id}/creditos/{credito_id}")
+def quitar_categoria_de_credito(
+    categoria_id: int,
+    credito_id: int,
+    session: Session = Depends(get_session),
+):
+    """
+    Elimina la asociación de una categoría con un crédito.
+    """
+    relacion = session.exec(
+        select(CreditoCategoria).where(
+            CreditoCategoria.categoria_id == categoria_id,
+            CreditoCategoria.credito_id == credito_id,
+        )
+    ).first()
+
+    if not relacion:
+        raise HTTPException(
+            status_code=404,
+            detail="La relación categoría-crédito no existe",
+        )
+
+    categoria = session.get(Categoria, categoria_id)
+    credito = session.get(Credito, credito_id)
+
+    h = Historial(
+        entidad="Categoría-Crédito",
+        accion="DESASIGNAR",
+        descripcion=(
+            f"Categoría '{categoria.nombre}' (id {categoria.idCategoria}) "
+            f"desasignada del crédito id {credito.idCredito}"
+        ),
+        fecha=datetime.now(),
+    )
+    session.add(h)
+
+    session.delete(relacion)
+    session.commit()
+
+    return {"mensaje": "Categoría desasignada del crédito correctamente"}
