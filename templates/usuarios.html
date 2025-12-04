@@ -6,19 +6,70 @@
 
 <h2>Gestionar Usuario</h2>
 
-<!-- Formulario para CREAR o EDITAR -->
-<form method="post" id="usuarioForm" action="/usuarios/crear">
+<form method="post"
+      id="usuarioForm"
+      action="/usuarios/crear"
+      onsubmit="return validarUsuario()">
+
+    <!-- ID oculto: si viene, se edita; si no, se crea -->
     <input type="hidden" name="idUsuario" id="idUsuario">
 
-    <input type="text" name="nombre" id="nombre" placeholder="Nombre" required>
-    <input type="number" step="0.01" name="ingresos" id="ingresos" placeholder="Ingresos" required>
-    <input type="number" step="0.01" name="gastos" id="gastos" placeholder="Gastos" required>
-    <input type="email" name="correo" id="correo" placeholder="Correo electrónico">
-    <input type="text" name="telefono" id="telefono" placeholder="Teléfono">
+    <div class="form-row">
+        <label for="nombre">Nombre *</label>
+        <input type="text"
+               name="nombre"
+               id="nombre"
+               placeholder="Nombre completo"
+               required>
+    </div>
 
-    <button type="submit">Guardar</button>
-    <button type="button" onclick="prepararNuevo()">Nuevo</button>
+    <div class="form-row">
+        <label for="ingresos_display">Ingresos mensuales *</label>
+        <!-- Campo visible con formato -->
+        <input type="text"
+               id="ingresos_display"
+               placeholder="Ej: 2.500.000,00"
+               autocomplete="off">
+        <!-- Campo real que se envía al backend -->
+        <input type="hidden"
+               name="ingresos"
+               id="ingresos">
+    </div>
+
+    <div class="form-row">
+        <label for="gastos_display">Gastos mensuales *</label>
+        <input type="text"
+               id="gastos_display"
+               placeholder="Ej: 1.200.000,00"
+               autocomplete="off">
+        <input type="hidden"
+               name="gastos"
+               id="gastos">
+    </div>
+
+    <div class="form-row">
+        <label for="correo">Correo electrónico</label>
+        <input type="email"
+               name="correo"
+               id="correo"
+               placeholder="correo@ejemplo.com">
+    </div>
+
+    <div class="form-row">
+        <label for="telefono">Teléfono</label>
+        <input type="text"
+               name="telefono"
+               id="telefono"
+               placeholder="Número de contacto">
+    </div>
+
+    <div class="form-actions">
+        <button type="submit">Guardar</button>
+        <button type="button" onclick="prepararNuevo()">Limpiar / Nuevo</button>
+    </div>
 </form>
+
+<hr>
 
 <h2>Lista de Usuarios</h2>
 <table>
@@ -56,25 +107,129 @@
 </table>
 
 <script>
+// ---------- Utilidades de formato ----------
+function numeroDesdeTexto(valor) {
+    if (!valor) return NaN;
+    // quitar todo lo que no sea dígito, punto o coma
+    let limpio = valor.replace(/[^\d.,]/g, '');
+    // cambiar coma por punto (para parseFloat)
+    limpio = limpio.replace(',', '.');
+    return parseFloat(limpio);
+}
+
+function textoFormatoPeso(num) {
+    if (isNaN(num)) return '';
+    // mostramos con formato colombiano, pero solo para la vista
+    return num.toLocaleString('es-CO', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+}
+
+function configurarCampoDinero(idDisplay, idHidden) {
+    const display = document.getElementById(idDisplay);
+    const hidden = document.getElementById(idHidden);
+
+    // cuando escribe, actualizamos el hidden y formateamos el display
+    display.addEventListener('input', () => {
+        const num = numeroDesdeTexto(display.value);
+        if (isNaN(num)) {
+            hidden.value = '';
+            return;
+        }
+        hidden.value = num.toString(); // esto es lo que irá al backend
+        display.value = textoFormatoPeso(num);
+    });
+
+    // al hacer foco, mostramos el valor "crudo" para que sea fácil editar
+    display.addEventListener('focus', () => {
+        if (hidden.value) {
+            display.value = hidden.value;
+        }
+    });
+
+    // al perder foco, volvemos a formatear
+    display.addEventListener('blur', () => {
+        const num = parseFloat(hidden.value);
+        if (!isNaN(num)) {
+            display.value = textoFormatoPeso(num);
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    configurarCampoDinero('ingresos_display', 'ingresos');
+    configurarCampoDinero('gastos_display', 'gastos');
+});
+
+// ---------- Lógica de formulario (nuevo/editar) ----------
 function prepararNuevo() {
     const form = document.getElementById('usuarioForm');
     form.reset();
+
     document.getElementById('idUsuario').value = '';
+    document.getElementById('ingresos').value = '';
+    document.getElementById('gastos').value = '';
+    document.getElementById('ingresos_display').value = '';
+    document.getElementById('gastos_display').value = '';
+
     form.action = '/usuarios/crear';
 }
 
 function cargarUsuarioDesdeFila(btn) {
     const form = document.getElementById('usuarioForm');
 
-    document.getElementById('idUsuario').value = btn.dataset.id;
-    document.getElementById('nombre').value = btn.dataset.nombre;
-    document.getElementById('ingresos').value = btn.dataset.ingresos;
-    document.getElementById('gastos').value = btn.dataset.gastos;
-    document.getElementById('correo').value = btn.dataset.correo;
-    document.getElementById('telefono').value = btn.dataset.telefono;
+    const id = btn.dataset.id;
+    const nombre = btn.dataset.nombre;
+    const ingresos = parseFloat(btn.dataset.ingresos || '0');
+    const gastos = parseFloat(btn.dataset.gastos || '0');
+    const correo = btn.dataset.correo || '';
+    const telefono = btn.dataset.telefono || '';
 
-    // Cuando hay ID, el formulario actualiza en vez de crear
+    document.getElementById('idUsuario').value = id;
+    document.getElementById('nombre').value = nombre;
+
+    // guardamos el valor "real" en los hidden
+    document.getElementById('ingresos').value = ingresos.toString();
+    document.getElementById('gastos').value = gastos.toString();
+
+    // mostramos formateado en los display
+    document.getElementById('ingresos_display').value = textoFormatoPeso(ingresos);
+    document.getElementById('gastos_display').value = textoFormatoPeso(gastos);
+
+    document.getElementById('correo').value = correo;
+    document.getElementById('telefono').value = telefono;
+
+    // cuando hay ID, el formulario actualiza en vez de crear
     form.action = '/usuarios/actualizar';
+}
+
+// ---------- Validaciones básicas antes de enviar ----------
+function validarUsuario() {
+    const nombre = document.getElementById('nombre').value.trim();
+    const ingresosHidden = document.getElementById('ingresos').value;
+    const gastosHidden = document.getElementById('gastos').value;
+
+    if (!nombre) {
+        alert('El nombre es obligatorio.');
+        return false;
+    }
+
+    const ingresosNum = parseFloat(ingresosHidden);
+    const gastosNum = parseFloat(gastosHidden);
+
+    if (isNaN(ingresosNum) || ingresosNum <= 0) {
+        alert('Los ingresos son obligatorios y deben ser un número mayor que cero.');
+        return false;
+    }
+
+    if (isNaN(gastosNum) || gastosNum < 0) {
+        alert('Los gastos son obligatorios y no pueden ser negativos.');
+        return false;
+    }
+
+    // Si todo está bien, dejamos que el form se envíe
+    return true;
 }
 </script>
 {% endblock %}
