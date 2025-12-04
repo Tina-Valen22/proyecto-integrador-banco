@@ -46,10 +46,18 @@ app = FastAPI(
 )
 
 # -----------------------------
+# Crear carpeta upload si no existe
+# -----------------------------
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+UPLOADS_DIR = os.path.join(BASE_DIR, "upload")
+os.makedirs(UPLOADS_DIR, exist_ok=True)
+os.makedirs(os.path.join(UPLOADS_DIR, "cedulas"), exist_ok=True)  
+
+# -----------------------------
 # Templates y archivos estáticos
 # -----------------------------
 app.mount("/static", StaticFiles(directory="static"), name="static")
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+app.mount("/upload", StaticFiles(directory="upload"), name="upload")
 templates = Jinja2Templates(directory="templates")
 
 

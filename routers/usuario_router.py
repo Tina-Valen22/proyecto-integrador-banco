@@ -55,7 +55,7 @@ def crear_usuario_form(
                 detail="La cédula debe ser un archivo PDF o JPG",
             )
 
-        upload_dir = "uploads/cedulas"
+        upload_dir = "upload/cedulas"
         os.makedirs(upload_dir, exist_ok=True)
 
         filename = f"{uuid.uuid4().hex}{ext}"
@@ -125,7 +125,7 @@ def actualizar_usuario_form(
                 detail="La cédula debe ser un archivo PDF o JPG",
             )
 
-        upload_dir = "uploads/cedulas"
+        upload_dir = "upload/cedulas"
         os.makedirs(upload_dir, exist_ok=True)
 
         filename = f"{uuid.uuid4().hex}{ext}"
