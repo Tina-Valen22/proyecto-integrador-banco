@@ -116,12 +116,21 @@ def ui_categorias(
 ):
     categorias = session.exec(select(Categoria)).all()
     creditos = session.exec(select(Credito)).all()
+    relaciones = session.exec(select(CreditoCategoria)).all()
+
+    # Mapeo categoria_id -> primer credito_id asociado (para mostrar/prellenar)
+    cat_creditos = {}
+    for rel in relaciones:
+        if rel.categoria_id not in cat_creditos:
+            cat_creditos[rel.categoria_id] = rel.credito_id
+
     return templates.TemplateResponse(
         "categorias.html",
         {
             "request": request,
             "categorias": categorias,
             "creditos": creditos,
+            "cat_creditos": cat_creditos,
         },
     )
 

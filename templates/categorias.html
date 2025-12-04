@@ -32,6 +32,18 @@
                   required></textarea>
     </div>
 
+    <div class="form-row">
+        <label for="credito_id">Crédito asociado *</label>
+        <select name="credito_id" id="credito_id" required>
+            <option value="">-- Seleccione un crédito --</option>
+            {% for cr in creditos %}
+            <option value="{{ cr.idCredito }}">
+                Crédito {{ cr.idCredito }} - {{ cr.tipo }} - Monto: {{ cr.monto }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+
     <div class="form-actions">
         <button type="submit">Guardar</button>
         <button type="button" onclick="prepararNuevaCategoria()">Limpiar / Nuevo</button>
@@ -46,6 +58,7 @@
         <th>ID</th>
         <th>Nombre</th>
         <th>Descripción</th>
+        <th>Crédito asociado</th>
         <th>Acciones</th>
     </tr>
     {% for c in categorias %}
@@ -54,11 +67,20 @@
         <td>{{ c.nombre }}</td>
         <td>{{ c.descripcion }}</td>
         <td>
+            {% set cid = cat_creditos.get(c.idCategoria) %}
+            {% if cid %}
+                {{ cid }}
+            {% else %}
+                Sin asignar
+            {% endif %}
+        </td>
+        <td>
             <button type="button"
                     onclick="cargarCategoriaDesdeFila(this)"
                     data-id="{{ c.idCategoria }}"
                     data-nombre="{{ c.nombre }}"
-                    data-descripcion="{{ c.descripcion or '' }}">
+                    data-descripcion="{{ c.descripcion or '' }}"
+                    data-credito_id="{{ cat_creditos.get(c.idCategoria, '') }}">
                 Editar
             </button>
         </td>
@@ -67,13 +89,10 @@
 </table>
 
 <script>
-// ---------- Lógica de formulario (nuevo/editar) ----------
 function prepararNuevaCategoria() {
     const form = document.getElementById('categoriaForm');
     form.reset();
-
     document.getElementById('idCategoria').value = '';
-
     form.action = '/categorias/crear';
 }
 
@@ -83,19 +102,25 @@ function cargarCategoriaDesdeFila(btn) {
     const id = btn.dataset.id;
     const nombre = btn.dataset.nombre || '';
     const descripcion = btn.dataset.descripcion || '';
+    const creditoId = btn.dataset.credito_id || '';
 
     document.getElementById('idCategoria').value = id;
     document.getElementById('nombre').value = nombre;
     document.getElementById('descripcion').value = descripcion;
 
-    // cuando hay ID, el formulario actualiza en vez de crear
+    if (creditoId) {
+        document.getElementById('credito_id').value = creditoId;
+    } else {
+        document.getElementById('credito_id').value = '';
+    }
+
     form.action = '/categorias/actualizar';
 }
 
-// ---------- Validaciones antes de enviar ----------
 function validarCategoria() {
     const nombre = document.getElementById('nombre').value.trim();
     const descripcion = document.getElementById('descripcion').value.trim();
+    const creditoId = document.getElementById('credito_id').value;
 
     if (!nombre) {
         alert('El nombre de la categoría es obligatorio.');
@@ -104,6 +129,11 @@ function validarCategoria() {
 
     if (!descripcion) {
         alert('La descripción es obligatoria.');
+        return false;
+    }
+
+    if (!creditoId) {
+        alert('Debe seleccionar un crédito asociado.');
         return false;
     }
 

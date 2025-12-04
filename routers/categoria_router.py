@@ -341,10 +341,12 @@ def quitar_categoria_de_credito(
 def crear_categoria_form(
     nombre: str = Form(...),
     descripcion: str = Form(...),
+    credito_id: int = Form(...),
     session: Session = Depends(get_session),
 ):
     """
-    Crea una categoría desde el formulario HTML y redirige a /ui/categorias.
+    Crea una categoría desde el formulario HTML, la asocia a un crédito
+    y redirige a /ui/categorias.
     Todos los campos son obligatorios.
     """
     if not nombre.strip() or not descripcion.strip():
@@ -353,14 +355,22 @@ def crear_categoria_form(
             detail="Nombre y descripción son obligatorios",
         )
 
+    # Validar crédito
+    credito = session.get(Credito, credito_id)
+    if not credito:
+        raise HTTPException(
+            status_code=400,
+            detail="El crédito seleccionado no existe",
+        )
+
     # Validar duplicado por nombre
     existente = session.exec(
-        select(Categoria).where(Categoria.nombre == nombre)
+        select(Categoria).where(Categoria.nombre == nombre.strip())
     ).first()
     if existente:
         raise HTTPException(
             status_code=400,
-            detail=f"Ya existe una categoría con el nombre '{nombre}'",
+            detail=f"Ya existe una categoría con el nombre '{nombre.strip()}'",
         )
 
     categoria = Categoria(
@@ -371,13 +381,32 @@ def crear_categoria_form(
     session.commit()
     session.refresh(categoria)
 
-    h = Historial(
+    # Crear relación con el crédito
+    relacion = CreditoCategoria(
+        categoria_id=categoria.idCategoria,
+        credito_id=credito_id,
+    )
+    session.add(relacion)
+
+    h_cat = Historial(
         entidad="Categoría",
         accion="CREAR",
         descripcion=f"Categoría '{categoria.nombre}' creada con id {categoria.idCategoria}",
         fecha=datetime.now(),
     )
-    session.add(h)
+    session.add(h_cat)
+
+    h_rel = Historial(
+        entidad="Categoría-Crédito",
+        accion="ASIGNAR",
+        descripcion=(
+            f"Categoría '{categoria.nombre}' (id {categoria.idCategoria}) "
+            f"asignada al crédito id {credito.idCredito}"
+        ),
+        fecha=datetime.now(),
+    )
+    session.add(h_rel)
+
     session.commit()
 
     return RedirectResponse(url="/ui/categorias", status_code=status.HTTP_303_SEE_OTHER)
@@ -388,10 +417,13 @@ def actualizar_categoria_form(
     idCategoria: int = Form(...),
     nombre: str = Form(...),
     descripcion: str = Form(...),
+    credito_id: int = Form(...),
     session: Session = Depends(get_session),
 ):
     """
-    Actualiza una categoría desde el formulario HTML y redirige a /ui/categorias.
+    Actualiza una categoría desde el formulario HTML,
+    ajusta su asociación con un crédito
+    y redirige a /ui/categorias.
     Todos los campos son obligatorios.
     """
     categoria = session.get(Categoria, idCategoria)
@@ -402,6 +434,14 @@ def actualizar_categoria_form(
         raise HTTPException(
             status_code=400,
             detail="Nombre y descripción son obligatorios",
+        )
+
+    # Validar crédito
+    credito = session.get(Credito, credito_id)
+    if not credito:
+        raise HTTPException(
+            status_code=400,
+            detail="El crédito seleccionado no existe",
         )
 
     # Validar nombre duplicado si cambia
@@ -417,21 +457,32 @@ def actualizar_categoria_form(
 
     categoria.nombre = nombre.strip()
     categoria.descripcion = descripcion.strip()
-
     session.add(categoria)
-    session.commit()
-    session.refresh(categoria)
+
+    # Ajustar relaciones: dejamos solo el crédito seleccionado
+    relaciones = session.exec(
+        select(CreditoCategoria).where(CreditoCategoria.categoria_id == idCategoria)
+    ).all()
+    for rel in relaciones:
+        session.delete(rel)
+
+    nueva_relacion = CreditoCategoria(
+        categoria_id=idCategoria,
+        credito_id=credito_id,
+    )
+    session.add(nueva_relacion)
 
     h = Historial(
         entidad="Categoría",
         accion="ACTUALIZAR",
         descripcion=(
             f"Categoría id {categoria.idCategoria} actualizada "
-            f"('{categoria.nombre}')"
+            f"('{categoria.nombre}') y asociada al crédito id {credito.idCredito}"
         ),
         fecha=datetime.now(),
     )
     session.add(h)
+
     session.commit()
 
     return RedirectResponse(url="/ui/categorias", status_code=status.HTTP_303_SEE_OTHER)
