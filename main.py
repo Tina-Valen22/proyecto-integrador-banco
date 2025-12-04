@@ -30,9 +30,7 @@ app = FastAPI(
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-@app.get("/")
-def home(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+
 
 # -----------------------------
 # Eventos de ciclo de vida
@@ -50,12 +48,8 @@ def on_startup():
 # Rutas base (vista HTML)
 # -----------------------------
 @app.get("/")
-def read_root():
-    return {
-        "status": "ok",
-        "message": "API Integrador Banco funcionando",
-        "docs": "/docs",
-    }
+def read_root(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
 
 @app.get("/health")
 def health_check():
