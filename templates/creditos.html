@@ -4,42 +4,224 @@
 {% block content %}
 <h1>Créditos</h1>
 
-<h2>Crear Crédito</h2>
-<form method="post" action="/creditos/crear">
-    <input type="number" step="0.01" name="monto" placeholder="Monto" required>
-    <input type="number" name="plazo" placeholder="Plazo (meses)" required>
-    <input type="text" name="tipo" placeholder="Tipo" required>
-    <input type="text" name="descripcion" placeholder="Descripción">
+<h2>Gestionar Crédito</h2>
 
-    <select name="usuario_id" required>
-        <option value="">Seleccione usuario</option>
-        {% for u in usuarios %}
-        <option value="{{ u.idUsuario }}">{{ u.nombre }}</option>
-        {% endfor %}
-    </select>
+<form method="post"
+      id="creditoForm"
+      action="/creditos/crear"
+      onsubmit="return validarCredito()">
 
-    <button type="submit">Guardar</button>
+    <!-- ID oculto: si viene, se edita; si no, se crea -->
+    <input type="hidden" name="idCredito" id="idCredito">
+
+    <div class="form-row">
+        <label for="usuario_id">Usuario *</label>
+        <select name="usuario_id" id="usuario_id" required>
+            <option value="">Seleccione un usuario</option>
+            {% for u in usuarios %}
+            <option value="{{ u.idUsuario }}">{{ u.nombre }} (ID {{ u.idUsuario }})</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="form-row">
+        <label for="monto_display">Monto del crédito (mínimo 100.000) *</label>
+        <!-- Campo visible con formato -->
+        <input type="text"
+               id="monto_display"
+               placeholder="Ej: 5.000.000"
+               autocomplete="off">
+        <!-- Campo real que se envía al backend -->
+        <input type="hidden"
+               name="monto"
+               id="monto">
+    </div>
+
+    <div class="form-row">
+        <label for="plazo">Plazo (meses) *</label>
+        <input type="number"
+               name="plazo"
+               id="plazo"
+               min="1"
+               placeholder="Ej: 36"
+               required>
+    </div>
+
+    <div class="form-row">
+        <label for="tipo">Tipo de crédito *</label>
+        <input type="text"
+               name="tipo"
+               id="tipo"
+               placeholder="Ej: Consumo, Libre inversión, Vehículo..."
+               required>
+    </div>
+
+    <div class="form-row">
+        <label for="descripcion">Descripción de la solicitud *</label>
+        <textarea name="descripcion"
+                  id="descripcion"
+                  rows="3"
+                  placeholder="Describe brevemente la finalidad del crédito"
+                  required></textarea>
+    </div>
+
+    <div class="form-actions">
+        <button type="submit">Guardar</button>
+        <button type="button" onclick="prepararNuevoCredito()">Limpiar / Nuevo</button>
+    </div>
 </form>
+
+<hr>
 
 <h2>Lista de Créditos</h2>
 <table>
     <tr>
         <th>ID</th>
+        <th>Usuario ID</th>
         <th>Monto</th>
-        <th>Plazo</th>
+        <th>Plazo (meses)</th>
         <th>Tipo</th>
         <th>Descripción</th>
-        <th>Usuario ID</th>
+        <th>Acciones</th>
     </tr>
     {% for c in creditos %}
     <tr>
         <td>{{ c.idCredito }}</td>
+        <td>{{ c.usuario_id }}</td>
         <td>{{ c.monto }}</td>
         <td>{{ c.plazo }}</td>
         <td>{{ c.tipo }}</td>
         <td>{{ c.descripcion }}</td>
-        <td>{{ c.usuario_id }}</td>
+        <td>
+            <button type="button"
+                    onclick="cargarCreditoDesdeFila(this)"
+                    data-id="{{ c.idCredito }}"
+                    data-usuario-id="{{ c.usuario_id }}"
+                    data-monto="{{ c.monto }}"
+                    data-plazo="{{ c.plazo }}"
+                    data-tipo="{{ c.tipo }}"
+                    data-descripcion="{{ c.descripcion or '' }}">
+                Editar
+            </button>
+        </td>
     </tr>
     {% endfor %}
 </table>
+
+<script>
+// ---------- Formato dinero: enteros con separador de miles ----------
+function configurarCampoDineroEntero(idDisplay, idHidden) {
+    const display = document.getElementById(idDisplay);
+    const hidden = document.getElementById(idHidden);
+
+    display.addEventListener('input', () => {
+        // Solo dejar dígitos
+        let soloDigitos = display.value.replace(/\D/g, '');
+
+        if (soloDigitos.length === 0) {
+            hidden.value = '';
+            display.value = '';
+            return;
+        }
+
+        // Convertir a entero
+        const num = parseInt(soloDigitos, 10);
+        if (isNaN(num)) {
+            hidden.value = '';
+            return;
+        }
+
+        hidden.value = num.toString(); // esto va al backend (como número)
+        // Formato con miles, sin decimales
+        display.value = num.toLocaleString('es-CO');
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    configurarCampoDineroEntero('monto_display', 'monto');
+});
+
+// ---------- Lógica de formulario (nuevo/editar) ----------
+function prepararNuevoCredito() {
+    const form = document.getElementById('creditoForm');
+    form.reset();
+
+    document.getElementById('idCredito').value = '';
+    document.getElementById('monto').value = '';
+    document.getElementById('monto_display').value = '';
+
+    form.action = '/creditos/crear';
+}
+
+function cargarCreditoDesdeFila(btn) {
+    const form = document.getElementById('creditoForm');
+
+    const id = btn.dataset.id;
+    const usuarioId = btn.dataset['usuarioId'];
+    const monto = parseFloat(btn.dataset.monto || '0');
+    const plazo = btn.dataset.plazo || '';
+    const tipo = btn.dataset.tipo || '';
+    const descripcion = btn.dataset.descripcion || '';
+
+    document.getElementById('idCredito').value = id;
+
+    // seleccionar el usuario en el combo
+    const selectUsuario = document.getElementById('usuario_id');
+    if (selectUsuario) {
+        selectUsuario.value = usuarioId;
+    }
+
+    // guardamos el valor "real" en el hidden
+    const montoInt = Math.round(monto);
+    document.getElementById('monto').value = montoInt.toString();
+    document.getElementById('monto_display').value =
+        montoInt.toLocaleString('es-CO');
+
+    document.getElementById('plazo').value = plazo;
+    document.getElementById('tipo').value = tipo;
+    document.getElementById('descripcion').value = descripcion;
+
+    // cuando hay ID, el formulario actualiza en vez de crear
+    form.action = '/creditos/actualizar';
+}
+
+// ---------- Validaciones antes de enviar ----------
+function validarCredito() {
+    const usuarioId = document.getElementById('usuario_id').value;
+    const montoHidden = document.getElementById('monto').value;
+    const plazo = document.getElementById('plazo').value;
+    const tipo = document.getElementById('tipo').value.trim();
+    const descripcion = document.getElementById('descripcion').value.trim();
+
+    if (!usuarioId) {
+        alert('Debe seleccionar un usuario.');
+        return false;
+    }
+
+    const montoNum = parseInt(montoHidden, 10);
+    if (isNaN(montoNum) || montoNum < 100000) {
+        alert('El monto es obligatorio y debe ser al menos 100.000.');
+        return false;
+    }
+
+    const plazoNum = parseInt(plazo, 10);
+    if (isNaN(plazoNum) || plazoNum < 1) {
+        alert('El plazo es obligatorio y debe ser al menos 1 mes.');
+        return false;
+    }
+
+    if (!tipo) {
+        alert('El tipo de crédito es obligatorio.');
+        return false;
+    }
+
+    if (!descripcion) {
+        alert('La descripción de la solicitud es obligatoria.');
+        return false;
+    }
+
+    // Todo ok
+    return true;
+}
+</script>
 {% endblock %}
