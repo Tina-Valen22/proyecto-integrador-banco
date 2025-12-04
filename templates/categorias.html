@@ -4,43 +4,110 @@
 {% block content %}
 <h1>Categorías</h1>
 
-<h2>Crear Categoría</h2>
-<form method="post" action="/categorias/crear">
-    <input type="text" name="nombre" placeholder="Nombre categoría" required>
-    <input type="text" name="descripcion" placeholder="Descripción">
-    <button type="submit">Guardar</button>
+<h2>Gestionar Categoría</h2>
+
+<form method="post"
+      id="categoriaForm"
+      action="/categorias/crear"
+      onsubmit="return validarCategoria()">
+
+    <!-- ID oculto: si viene, se edita; si no, se crea -->
+    <input type="hidden" name="idCategoria" id="idCategoria">
+
+    <div class="form-row">
+        <label for="nombre">Nombre de la categoría *</label>
+        <input type="text"
+               name="nombre"
+               id="nombre"
+               placeholder="Ej: Hipotecario, Consumo, Vehículo..."
+               required>
+    </div>
+
+    <div class="form-row">
+        <label for="descripcion">Descripción *</label>
+        <textarea name="descripcion"
+                  id="descripcion"
+                  rows="3"
+                  placeholder="Describe brevemente la categoría"
+                  required></textarea>
+    </div>
+
+    <div class="form-actions">
+        <button type="submit">Guardar</button>
+        <button type="button" onclick="prepararNuevaCategoria()">Limpiar / Nuevo</button>
+    </div>
 </form>
 
-<h2>Vincular Crédito a Categoría</h2>
-<form method="post" action="/categorias/vincular">
-    <select name="credito_id" required>
-        <option value="">Seleccione crédito</option>
-        {% for cr in creditos %}
-        <option value="{{ cr.idCredito }}">Crédito {{ cr.idCredito }}</option>
-        {% endfor %}
-    </select>
-
-    <select name="categoria_id" required>
-        <option value="">Seleccione categoría</option>
-        {% for cat in categorias %}
-        <option value="{{ cat.idCategoria }}">{{ cat.nombre }}</option>
-        {% endfor %}
-    </select>
-
-    <button type="submit">Vincular</button>
-</form>
+<hr>
 
 <h2>Lista de Categorías</h2>
 <table>
     <tr>
-        <th>ID</th><th>Nombre</th><th>Descripción</th>
+        <th>ID</th>
+        <th>Nombre</th>
+        <th>Descripción</th>
+        <th>Acciones</th>
     </tr>
     {% for c in categorias %}
     <tr>
         <td>{{ c.idCategoria }}</td>
         <td>{{ c.nombre }}</td>
         <td>{{ c.descripcion }}</td>
+        <td>
+            <button type="button"
+                    onclick="cargarCategoriaDesdeFila(this)"
+                    data-id="{{ c.idCategoria }}"
+                    data-nombre="{{ c.nombre }}"
+                    data-descripcion="{{ c.descripcion or '' }}">
+                Editar
+            </button>
+        </td>
     </tr>
     {% endfor %}
 </table>
+
+<script>
+// ---------- Lógica de formulario (nuevo/editar) ----------
+function prepararNuevaCategoria() {
+    const form = document.getElementById('categoriaForm');
+    form.reset();
+
+    document.getElementById('idCategoria').value = '';
+
+    form.action = '/categorias/crear';
+}
+
+function cargarCategoriaDesdeFila(btn) {
+    const form = document.getElementById('categoriaForm');
+
+    const id = btn.dataset.id;
+    const nombre = btn.dataset.nombre || '';
+    const descripcion = btn.dataset.descripcion || '';
+
+    document.getElementById('idCategoria').value = id;
+    document.getElementById('nombre').value = nombre;
+    document.getElementById('descripcion').value = descripcion;
+
+    // cuando hay ID, el formulario actualiza en vez de crear
+    form.action = '/categorias/actualizar';
+}
+
+// ---------- Validaciones antes de enviar ----------
+function validarCategoria() {
+    const nombre = document.getElementById('nombre').value.trim();
+    const descripcion = document.getElementById('descripcion').value.trim();
+
+    if (!nombre) {
+        alert('El nombre de la categoría es obligatorio.');
+        return false;
+    }
+
+    if (!descripcion) {
+        alert('La descripción es obligatoria.');
+        return false;
+    }
+
+    return true;
+}
+</script>
 {% endblock %}

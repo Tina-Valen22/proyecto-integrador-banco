@@ -3,7 +3,8 @@
 from datetime import datetime
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Form, status
+from fastapi.responses import RedirectResponse
 from sqlmodel import Session, select
 
 from database import get_session
@@ -16,7 +17,7 @@ router = APIRouter(prefix="/categorias", tags=["Categorías"])
 
 
 # -----------------------------
-# CREATE
+# CREATE (API JSON)
 # -----------------------------
 @router.post("/", response_model=Categoria)
 def crear_categoria(
@@ -26,7 +27,7 @@ def crear_categoria(
     """
     Crea una categoría y registra la acción en el historial.
     """
-    # Podrías validar que no exista otra con el mismo nombre
+    # Validar duplicado por nombre
     existente = session.exec(
         select(Categoria).where(Categoria.nombre == categoria.nombre)
     ).first()
@@ -53,7 +54,7 @@ def crear_categoria(
 
 
 # -----------------------------
-# READ - LISTAR / FILTRAR
+# READ - LISTAR / FILTRAR (API JSON)
 # -----------------------------
 @router.get("/", response_model=List[Categoria])
 def listar_categorias(
@@ -75,7 +76,7 @@ def listar_categorias(
 
 
 # -----------------------------
-# READ - OBTENER POR ID
+# READ - OBTENER POR ID (API JSON)
 # -----------------------------
 @router.get("/{categoria_id}", response_model=Categoria)
 def obtener_categoria(
@@ -92,7 +93,7 @@ def obtener_categoria(
 
 
 # -----------------------------
-# UPDATE COMPLETO (PUT)
+# UPDATE COMPLETO (PUT, API JSON)
 # -----------------------------
 @router.put("/{categoria_id}", response_model=Categoria)
 def actualizar_categoria(
@@ -140,7 +141,7 @@ def actualizar_categoria(
 
 
 # -----------------------------
-# UPDATE PARCIAL (PATCH)
+# UPDATE PARCIAL (PATCH, API JSON)
 # -----------------------------
 @router.patch("/{categoria_id}", response_model=Categoria)
 def actualizar_categoria_parcial(
@@ -195,7 +196,7 @@ def actualizar_categoria_parcial(
 
 
 # -----------------------------
-# DELETE
+# DELETE (API JSON)
 # -----------------------------
 @router.delete("/{categoria_id}")
 def eliminar_categoria(
@@ -232,7 +233,7 @@ def eliminar_categoria(
 
 
 # -----------------------------
-# ASIGNAR CATEGORÍA A CRÉDITO
+# ASIGNAR CATEGORÍA A CRÉDITO (API JSON)
 # -----------------------------
 @router.post("/{categoria_id}/creditos/{credito_id}")
 def asignar_categoria_a_credito(
@@ -288,7 +289,7 @@ def asignar_categoria_a_credito(
 
 
 # -----------------------------
-# QUITAR CATEGORÍA DE CRÉDITO
+# QUITAR CATEGORÍA DE CRÉDITO (API JSON)
 # -----------------------------
 @router.delete("/{categoria_id}/creditos/{credito_id}")
 def quitar_categoria_de_credito(
@@ -330,3 +331,107 @@ def quitar_categoria_de_credito(
     session.commit()
 
     return {"mensaje": "Categoría desasignada del crédito correctamente"}
+
+
+# -----------------------------------------
+# Endpoints para formularios HTML (UI)
+# -----------------------------------------
+
+@router.post("/crear")
+def crear_categoria_form(
+    nombre: str = Form(...),
+    descripcion: str = Form(...),
+    session: Session = Depends(get_session),
+):
+    """
+    Crea una categoría desde el formulario HTML y redirige a /ui/categorias.
+    Todos los campos son obligatorios.
+    """
+    if not nombre.strip() or not descripcion.strip():
+        raise HTTPException(
+            status_code=400,
+            detail="Nombre y descripción son obligatorios",
+        )
+
+    # Validar duplicado por nombre
+    existente = session.exec(
+        select(Categoria).where(Categoria.nombre == nombre)
+    ).first()
+    if existente:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Ya existe una categoría con el nombre '{nombre}'",
+        )
+
+    categoria = Categoria(
+        nombre=nombre.strip(),
+        descripcion=descripcion.strip(),
+    )
+    session.add(categoria)
+    session.commit()
+    session.refresh(categoria)
+
+    h = Historial(
+        entidad="Categoría",
+        accion="CREAR",
+        descripcion=f"Categoría '{categoria.nombre}' creada con id {categoria.idCategoria}",
+        fecha=datetime.now(),
+    )
+    session.add(h)
+    session.commit()
+
+    return RedirectResponse(url="/ui/categorias", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.post("/actualizar")
+def actualizar_categoria_form(
+    idCategoria: int = Form(...),
+    nombre: str = Form(...),
+    descripcion: str = Form(...),
+    session: Session = Depends(get_session),
+):
+    """
+    Actualiza una categoría desde el formulario HTML y redirige a /ui/categorias.
+    Todos los campos son obligatorios.
+    """
+    categoria = session.get(Categoria, idCategoria)
+    if not categoria:
+        raise HTTPException(status_code=404, detail="Categoría no encontrada")
+
+    if not nombre.strip() or not descripcion.strip():
+        raise HTTPException(
+            status_code=400,
+            detail="Nombre y descripción son obligatorios",
+        )
+
+    # Validar nombre duplicado si cambia
+    if nombre.strip() != categoria.nombre:
+        existente = session.exec(
+            select(Categoria).where(Categoria.nombre == nombre.strip())
+        ).first()
+        if existente:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Ya existe una categoría con el nombre '{nombre.strip()}'",
+            )
+
+    categoria.nombre = nombre.strip()
+    categoria.descripcion = descripcion.strip()
+
+    session.add(categoria)
+    session.commit()
+    session.refresh(categoria)
+
+    h = Historial(
+        entidad="Categoría",
+        accion="ACTUALIZAR",
+        descripcion=(
+            f"Categoría id {categoria.idCategoria} actualizada "
+            f"('{categoria.nombre}')"
+        ),
+        fecha=datetime.now(),
+    )
+    session.add(h)
+    session.commit()
+
+    return RedirectResponse(url="/ui/categorias", status_code=status.HTTP_303_SEE_OTHER)
