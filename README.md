@@ -50,3 +50,141 @@ proyecto-integrador-banco/
 │ └── usuario.html
 └── static/
   └── styles.css
+
+✨ Principales Funcionalidades
+✔ Gestión de Usuarios
+
+Crear usuarios
+
+Editar / listar
+
+Ver detalles
+
+Subir archivo de cédula
+
+Guardar información económica
+
+✔ Gestión de Créditos
+
+CRUD completo
+
+Relación con usuarios, categorías e intereses
+
+✔ Categorías
+
+Crear categorías
+
+Asignarlas a créditos
+
+✔ Tasas de Interés
+
+CRUD
+
+Uso en simulaciones
+
+✔ Simulaciones de Crédito
+
+Cálculo de cuota
+
+Interés total
+
+Saldo final
+
+✔ Historial de Movimientos
+
+Registro de eventos del crédito
+
+✔ Reportes
+
+Generación de reportes basados en usuario, crédito y simulación
+
+🧩 Diagramas (prontos para generar)
+
+Los siguientes diagramas pueden generarse como imágenes:
+
+📌 Diagrama UML de Clases
+
+Incluye:
+
+Usuario
+
+Crédito
+
+Categoría
+
+Interés
+
+Simulación
+
+Reporte
+
+Historial
+
+📌 Diagrama de Endpoints
+
+Muestra todas las rutas FastAPI agrupadas por módulo.
+
+🔧 Instalación
+
+1️⃣ Clona el repositorio
+
+git clone <URL_DEL_REPOSITORIO>
+cd proyecto-integrador-banco
+
+
+2️⃣ Instala dependencias
+
+pip install -r requirements.txt
+
+▶ Ejecutar el Servidor
+uvicorn main:app --reload
+
+
+Servidor disponible en:
+➡ http://127.0.0.1:8000/
+
+📚 Documentación Automática
+
+FastAPI incluye 2 documentaciones automáticas:
+
+Swagger UI: /docs
+
+ReDoc: /redoc
+
+🗂 Resumen del Modelo de Datos
+
+Usuario
+Tiene uno o varios créditos.
+
+Crédito
+Está asociado a un usuario, categoría e interés.
+
+Simulación
+Calcula la cuota y totales del crédito.
+
+Historial
+Guarda eventos importantes.
+
+Reporte
+Junta usuario + crédito + simulación.
+
+👤 Objetivo del Proyecto
+
+Construir un sistema web bancario que permita realizar:
+
+Registro de usuarios
+
+Gestión de créditos
+
+Cálculo de simulaciones
+
+Control de historial y reportes
+
+Administración vía API y vistas web
+
+Es ideal para demostrar:
+✔ Modelado de base de datos
+✔ Uso de FastAPI
+✔ Arquitectura modular
+✔ Integración de vistas HTML
+✔ CRUD completos
