@@ -49,7 +49,7 @@ def on_startup():
 # -----------------------------
 @app.get("/")
 def read_root(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse("home.html", {"request": request})
 
 @app.get("/health")
 def health_check():
