@@ -24,11 +24,11 @@
     </div>
 
     <div class="form-row">
-        <label for="ingresos_display">Ingresos mensuales *</label>
+        <label for="ingresos_display">Ingresos mensuales (mínimo 100.000) *</label>
         <!-- Campo visible con formato -->
         <input type="text"
                id="ingresos_display"
-               placeholder="Ej: 2.500.000,00"
+               placeholder="Ej: 2.500.000"
                autocomplete="off">
         <!-- Campo real que se envía al backend -->
         <input type="hidden"
@@ -40,7 +40,7 @@
         <label for="gastos_display">Gastos mensuales *</label>
         <input type="text"
                id="gastos_display"
-               placeholder="Ej: 1.200.000,00"
+               placeholder="Ej: 1.200.000"
                autocomplete="off">
         <input type="hidden"
                name="gastos"
@@ -48,19 +48,21 @@
     </div>
 
     <div class="form-row">
-        <label for="correo">Correo electrónico</label>
+        <label for="correo">Correo electrónico *</label>
         <input type="email"
                name="correo"
                id="correo"
-               placeholder="correo@ejemplo.com">
+               placeholder="correo@ejemplo.com"
+               required>
     </div>
 
     <div class="form-row">
-        <label for="telefono">Teléfono</label>
+        <label for="telefono">Teléfono *</label>
         <input type="text"
                name="telefono"
                id="telefono"
-               placeholder="Número de contacto">
+               placeholder="Número de contacto"
+               required>
     </div>
 
     <div class="form-actions">
@@ -107,59 +109,37 @@
 </table>
 
 <script>
-// ---------- Utilidades de formato ----------
-function numeroDesdeTexto(valor) {
-    if (!valor) return NaN;
-    // quitar todo lo que no sea dígito, punto o coma
-    let limpio = valor.replace(/[^\d.,]/g, '');
-    // cambiar coma por punto (para parseFloat)
-    limpio = limpio.replace(',', '.');
-    return parseFloat(limpio);
-}
-
-function textoFormatoPeso(num) {
-    if (isNaN(num)) return '';
-    // mostramos con formato colombiano, pero solo para la vista
-    return num.toLocaleString('es-CO', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-    });
-}
-
-function configurarCampoDinero(idDisplay, idHidden) {
+// ---------- Formato dinero: enteros con separador de miles ----------
+function configurarCampoDineroEntero(idDisplay, idHidden) {
     const display = document.getElementById(idDisplay);
     const hidden = document.getElementById(idHidden);
 
-    // cuando escribe, actualizamos el hidden y formateamos el display
     display.addEventListener('input', () => {
-        const num = numeroDesdeTexto(display.value);
+        // Solo dejar dígitos
+        let soloDigitos = display.value.replace(/\D/g, '');
+
+        if (soloDigitos.length === 0) {
+            hidden.value = '';
+            display.value = '';
+            return;
+        }
+
+        // Convertir a entero
+        const num = parseInt(soloDigitos, 10);
         if (isNaN(num)) {
             hidden.value = '';
             return;
         }
-        hidden.value = num.toString(); // esto es lo que irá al backend
-        display.value = textoFormatoPeso(num);
-    });
 
-    // al hacer foco, mostramos el valor "crudo" para que sea fácil editar
-    display.addEventListener('focus', () => {
-        if (hidden.value) {
-            display.value = hidden.value;
-        }
-    });
-
-    // al perder foco, volvemos a formatear
-    display.addEventListener('blur', () => {
-        const num = parseFloat(hidden.value);
-        if (!isNaN(num)) {
-            display.value = textoFormatoPeso(num);
-        }
+        hidden.value = num.toString(); // esto va al backend (como número)
+        // Formato con miles, sin decimales
+        display.value = num.toLocaleString('es-CO');
     });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    configurarCampoDinero('ingresos_display', 'ingresos');
-    configurarCampoDinero('gastos_display', 'gastos');
+    configurarCampoDineroEntero('ingresos_display', 'ingresos');
+    configurarCampoDineroEntero('gastos_display', 'gastos');
 });
 
 // ---------- Lógica de formulario (nuevo/editar) ----------
@@ -189,13 +169,18 @@ function cargarUsuarioDesdeFila(btn) {
     document.getElementById('idUsuario').value = id;
     document.getElementById('nombre').value = nombre;
 
-    // guardamos el valor "real" en los hidden
-    document.getElementById('ingresos').value = ingresos.toString();
-    document.getElementById('gastos').value = gastos.toString();
+    // guardamos el valor "real" en los hidden (redondeado por si viene con .0)
+    const ingresosInt = Math.round(ingresos);
+    const gastosInt = Math.round(gastos);
+
+    document.getElementById('ingresos').value = ingresosInt.toString();
+    document.getElementById('gastos').value = gastosInt.toString();
 
     // mostramos formateado en los display
-    document.getElementById('ingresos_display').value = textoFormatoPeso(ingresos);
-    document.getElementById('gastos_display').value = textoFormatoPeso(gastos);
+    document.getElementById('ingresos_display').value =
+        ingresosInt.toLocaleString('es-CO');
+    document.getElementById('gastos_display').value =
+        gastosInt.toLocaleString('es-CO');
 
     document.getElementById('correo').value = correo;
     document.getElementById('telefono').value = telefono;
@@ -204,22 +189,34 @@ function cargarUsuarioDesdeFila(btn) {
     form.action = '/usuarios/actualizar';
 }
 
-// ---------- Validaciones básicas antes de enviar ----------
+// ---------- Validaciones antes de enviar ----------
 function validarUsuario() {
     const nombre = document.getElementById('nombre').value.trim();
     const ingresosHidden = document.getElementById('ingresos').value;
     const gastosHidden = document.getElementById('gastos').value;
+    const correo = document.getElementById('correo').value.trim();
+    const telefono = document.getElementById('telefono').value.trim();
 
     if (!nombre) {
         alert('El nombre es obligatorio.');
         return false;
     }
 
-    const ingresosNum = parseFloat(ingresosHidden);
-    const gastosNum = parseFloat(gastosHidden);
+    if (!correo) {
+        alert('El correo es obligatorio.');
+        return false;
+    }
 
-    if (isNaN(ingresosNum) || ingresosNum <= 0) {
-        alert('Los ingresos son obligatorios y deben ser un número mayor que cero.');
+    if (!telefono) {
+        alert('El teléfono es obligatorio.');
+        return false;
+    }
+
+    const ingresosNum = parseInt(ingresosHidden, 10);
+    const gastosNum = parseInt(gastosHidden, 10);
+
+    if (isNaN(ingresosNum) || ingresosNum < 100000) {
+        alert('Los ingresos son obligatorios y deben ser al menos 100.000.');
         return false;
     }
 
@@ -228,7 +225,7 @@ function validarUsuario() {
         return false;
     }
 
-    // Si todo está bien, dejamos que el form se envíe
+    // Todo ok
     return true;
 }
 </script>
