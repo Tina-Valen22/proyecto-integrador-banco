@@ -1,7 +1,8 @@
 from datetime import datetime
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Form, status
+from fastapi.responses import RedirectResponse
 from sqlmodel import Session, select
 
 from database import get_session
@@ -13,7 +14,7 @@ router = APIRouter(prefix="/creditos", tags=["Créditos"])
 
 
 # -----------------------------
-# CREATE
+# CREATE (API JSON)
 # -----------------------------
 @router.post("/", response_model=Credito)
 def crear_credito(
@@ -53,7 +54,7 @@ def crear_credito(
 
 
 # -----------------------------
-# READ - LISTAR / FILTRAR
+# READ - LISTAR / FILTRAR (API JSON)
 # -----------------------------
 @router.get("/", response_model=List[Credito])
 def listar_creditos(
@@ -96,7 +97,7 @@ def listar_creditos(
 
 
 # -----------------------------
-# READ - OBTENER POR ID
+# READ - OBTENER POR ID (API JSON)
 # -----------------------------
 @router.get("/{credito_id}", response_model=Credito)
 def obtener_credito(
@@ -113,7 +114,7 @@ def obtener_credito(
 
 
 # -----------------------------
-# UPDATE COMPLETO (PUT)
+# UPDATE COMPLETO (PUT, API JSON)
 # -----------------------------
 @router.put("/{credito_id}", response_model=Credito)
 def actualizar_credito(
@@ -162,7 +163,7 @@ def actualizar_credito(
 
 
 # -----------------------------
-# UPDATE PARCIAL (PATCH)
+# UPDATE PARCIAL (PATCH, API JSON)
 # -----------------------------
 @router.patch("/{credito_id}", response_model=Credito)
 def actualizar_credito_parcial(
@@ -226,7 +227,7 @@ def actualizar_credito_parcial(
 
 
 # -----------------------------
-# DELETE
+# DELETE (API JSON)
 # -----------------------------
 @router.delete("/{credito_id}")
 def eliminar_credito(
@@ -252,3 +253,107 @@ def eliminar_credito(
     session.commit()
 
     return {"mensaje": "Crédito eliminado correctamente y registrado en historial"}
+
+
+# -----------------------------------------
+# Endpoints para formularios HTML (UI)
+# -----------------------------------------
+
+@router.post("/crear")
+def crear_credito_form(
+    usuario_id: int = Form(...),
+    monto: float = Form(...),
+    plazo: int = Form(...),
+    tipo: str = Form(...),
+    descripcion: str = Form(...),
+    session: Session = Depends(get_session),
+):
+    """
+    Crea un crédito desde el formulario HTML y redirige a /ui/creditos.
+    """
+    # Validar que el usuario exista
+    usuario = session.get(Usuario, usuario_id)
+    if not usuario:
+        raise HTTPException(
+            status_code=400,
+            detail=f"El usuario con id {usuario_id} no existe",
+        )
+
+    credito = Credito(
+        usuario_id=usuario_id,
+        monto=monto,
+        plazo=plazo,
+        tipo=tipo,
+        descripcion=descripcion,
+    )
+    session.add(credito)
+    session.commit()
+    session.refresh(credito)
+
+    # Registrar en historial
+    historial = Historial(
+        entidad="Crédito",
+        accion="CREAR",
+        descripcion=(
+            f"Crédito creado con id {credito.idCredito}, "
+            f"monto {credito.monto}, plazo {credito.plazo} meses, "
+            f"tipo '{credito.tipo}', para el usuario id {usuario_id}"
+        ),
+        fecha=datetime.now(),
+    )
+    session.add(historial)
+    session.commit()
+
+    return RedirectResponse(url="/ui/creditos", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.post("/actualizar")
+def actualizar_credito_form(
+    idCredito: int = Form(...),
+    usuario_id: int = Form(...),
+    monto: float = Form(...),
+    plazo: int = Form(...),
+    tipo: str = Form(...),
+    descripcion: str = Form(...),
+    session: Session = Depends(get_session),
+):
+    """
+    Actualiza un crédito desde el formulario HTML y redirige a /ui/creditos.
+    """
+    credito = session.get(Credito, idCredito)
+    if not credito:
+        raise HTTPException(status_code=404, detail="Crédito no encontrado")
+
+    # Validar usuario
+    usuario = session.get(Usuario, usuario_id)
+    if not usuario:
+        raise HTTPException(
+            status_code=400,
+            detail=f"El usuario con id {usuario_id} no existe",
+        )
+
+    credito.usuario_id = usuario_id
+    credito.monto = monto
+    credito.plazo = plazo
+    credito.tipo = tipo
+    credito.descripcion = descripcion
+
+    session.add(credito)
+    session.commit()
+    session.refresh(credito)
+
+    # Registrar en historial
+    historial = Historial(
+        entidad="Crédito",
+        accion="ACTUALIZAR",
+        descripcion=(
+            f"Crédito id {credito.idCredito} actualizado. "
+            f"Monto {credito.monto}, plazo {credito.plazo}, tipo '{credito.tipo}', "
+            f"usuario id {credito.usuario_id}"
+        ),
+        fecha=datetime.now(),
+    )
+    session.add(historial)
+    session.commit()
+
+    return RedirectResponse(url="/ui/creditos", status_code=status.HTTP_303_SEE_OTHER)
