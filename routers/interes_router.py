@@ -3,7 +3,8 @@
 from datetime import datetime
 from typing import List, Optional
 
-from fastapi import APIRouter, HTTPException, Depends, Query
+from fastapi import APIRouter, HTTPException, Depends, Query, Form, status
+from fastapi.responses import RedirectResponse
 from sqlmodel import Session, select
 
 from database import get_session
@@ -15,7 +16,7 @@ router = APIRouter(prefix="/intereses", tags=["Intereses"])
 
 
 # -----------------------------
-# CREATE
+# CREATE (API JSON)
 # -----------------------------
 @router.post("/", response_model=Interes)
 def crear_interes(
@@ -53,7 +54,7 @@ def crear_interes(
 
 
 # -----------------------------
-# READ - LISTAR / FILTRAR
+# READ - LISTAR / FILTRAR (API JSON)
 # -----------------------------
 @router.get("/", response_model=List[Interes])
 def listar_intereses(
@@ -96,7 +97,7 @@ def listar_intereses(
 
 
 # -----------------------------
-# READ - OBTENER POR ID
+# READ - OBTENER POR ID (API JSON)
 # -----------------------------
 @router.get("/{interes_id}", response_model=Interes)
 def obtener_interes(
@@ -113,7 +114,7 @@ def obtener_interes(
 
 
 # -----------------------------
-# UPDATE COMPLETO (PUT)
+# UPDATE COMPLETO (PUT, API JSON)
 # -----------------------------
 @router.put("/{interes_id}", response_model=Interes)
 def actualizar_interes(
@@ -162,7 +163,7 @@ def actualizar_interes(
 
 
 # -----------------------------
-# UPDATE PARCIAL (PATCH)
+# UPDATE PARCIAL (PATCH, API JSON)
 # -----------------------------
 @router.patch("/{interes_id}", response_model=Interes)
 def actualizar_interes_parcial(
@@ -220,7 +221,7 @@ def actualizar_interes_parcial(
 
 
 # -----------------------------
-# DELETE
+# DELETE (API JSON)
 # -----------------------------
 @router.delete("/{interes_id}")
 def eliminar_interes(
@@ -245,3 +246,138 @@ def eliminar_interes(
     session.commit()
 
     return {"mensaje": "Interés eliminado y guardado en historial"}
+
+
+# -----------------------------------------
+# Endpoints para formularios HTML (UI)
+# -----------------------------------------
+
+@router.post("/crear")
+def crear_interes_form(
+    tasa: str = Form(...),
+    tipo: str = Form(...),
+    credito_id: int = Form(...),
+    session: Session = Depends(get_session),
+):
+    """
+    Crea un interés desde el formulario HTML y redirige a /ui/intereses.
+    Campos obligatorios:
+    - crédito
+    - tasa (0 < tasa <= 100)
+    - tipo
+    """
+    # Validar crédito
+    credito = session.get(Credito, credito_id)
+    if not credito:
+        raise HTTPException(status_code=400, detail="Crédito no encontrado")
+
+    # Normalizar y validar tasa
+    tasa_str = tasa.strip().replace("%", "").replace(",", ".")
+    try:
+        tasa_val = float(tasa_str)
+    except ValueError:
+        raise HTTPException(
+            status_code=400,
+            detail="La tasa debe ser un número válido",
+        )
+
+    if tasa_val <= 0 or tasa_val > 100:
+        raise HTTPException(
+            status_code=400,
+            detail="La tasa debe ser mayor que 0 y menor o igual a 100",
+        )
+
+    if not tipo.strip():
+        raise HTTPException(
+            status_code=400,
+            detail="El tipo de interés es obligatorio",
+        )
+
+    interes = Interes(
+        tasa=tasa_val,
+        tipo=tipo.strip(),
+        credito_id=credito_id,
+    )
+    session.add(interes)
+    session.commit()
+    session.refresh(interes)
+
+    h = Historial(
+        entidad="Interés",
+        accion="CREAR",
+        descripcion=(
+            f"Interés creado para crédito {credito_id} "
+            f"(tasa={tasa_val}, tipo='{tipo.strip()}')"
+        ),
+        fecha=datetime.now(),
+    )
+    session.add(h)
+    session.commit()
+
+    return RedirectResponse(url="/ui/intereses", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.post("/actualizar")
+def actualizar_interes_form(
+    idInteres: int = Form(...),
+    tasa: str = Form(...),
+    tipo: str = Form(...),
+    credito_id: int = Form(...),
+    session: Session = Depends(get_session),
+):
+    """
+    Actualiza un interés desde el formulario HTML y redirige a /ui/intereses.
+    Todos los campos son obligatorios.
+    """
+    interes = session.get(Interes, idInteres)
+    if not interes:
+        raise HTTPException(status_code=404, detail="Interés no encontrado")
+
+    # Validar crédito
+    credito = session.get(Credito, credito_id)
+    if not credito:
+        raise HTTPException(status_code=400, detail="Crédito no encontrado")
+
+    # Normalizar y validar tasa
+    tasa_str = tasa.strip().replace("%", "").replace(",", ".")
+    try:
+        tasa_val = float(tasa_str)
+    except ValueError:
+        raise HTTPException(
+            status_code=400,
+            detail="La tasa debe ser un número válido",
+        )
+
+    if tasa_val <= 0 or tasa_val > 100:
+        raise HTTPException(
+            status_code=400,
+            detail="La tasa debe ser mayor que 0 y menor o igual a 100",
+        )
+
+    if not tipo.strip():
+        raise HTTPException(
+            status_code=400,
+            detail="El tipo de interés es obligatorio",
+        )
+
+    interes.tasa = tasa_val
+    interes.tipo = tipo.strip()
+    interes.credito_id = credito_id
+
+    session.add(interes)
+    session.commit()
+    session.refresh(interes)
+
+    h = Historial(
+        entidad="Interés",
+        accion="ACTUALIZAR",
+        descripcion=(
+            f"Interés {idInteres} actualizado "
+            f"(tasa={tasa_val}, tipo='{interes.tipo}', credito_id={interes.credito_id})"
+        ),
+        fecha=datetime.now(),
+    )
+    session.add(h)
+    session.commit()
+
+    return RedirectResponse(url="/ui/intereses", status_code=status.HTTP_303_SEE_OTHER)

@@ -4,33 +4,139 @@
 {% block content %}
 <h1>Intereses</h1>
 
-<h2>Crear Interés</h2>
-<form method="post" action="/intereses/crear">
-    <input type="number" step="0.01" name="tasa" placeholder="Tasa (%)" required>
-    <input type="text" name="tipo" placeholder="Tipo interés" required>
+<h2>Gestionar Interés</h2>
 
-    <select name="credito_id" required>
-        <option value="">Seleccione crédito</option>
-        {% for c in creditos %}
-        <option value="{{ c.idCredito }}">Crédito {{ c.idCredito }}</option>
-        {% endfor %}
-    </select>
+<form method="post"
+      id="interesForm"
+      action="/intereses/crear"
+      onsubmit="return validarInteres()">
 
-    <button type="submit">Guardar</button>
+    <!-- ID oculto: si viene, se edita; si no, se crea -->
+    <input type="hidden" name="idInteres" id="idInteres">
+
+    <div class="form-row">
+        <label for="credito_id">Crédito *</label>
+        <select name="credito_id" id="credito_id" required>
+            <option value="">-- Seleccione un crédito --</option>
+            {% for c in creditos %}
+            <option value="{{ c.idCredito }}">
+                Crédito {{ c.idCredito }} - {{ c.tipo }} - Monto: {{ c.monto }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="form-row">
+        <label for="tasa">Tasa de interés (%) *</label>
+        <input type="number"
+               name="tasa"
+               id="tasa"
+               step="0.01"
+               min="0.01"
+               max="100"
+               placeholder="Ej: 12.5"
+               required>
+    </div>
+
+    <div class="form-row">
+        <label for="tipo">Tipo de interés *</label>
+        <select name="tipo" id="tipo" required>
+            <option value="">-- Seleccione el tipo --</option>
+            <option value="Fijo">Fijo</option>
+            <option value="Variable">Variable</option>
+        </select>
+    </div>
+
+    <div class="form-actions">
+        <button type="submit">Guardar</button>
+        <button type="button" onclick="prepararNuevoInteres()">Limpiar / Nuevo</button>
+    </div>
 </form>
+
+<hr>
 
 <h2>Lista de Intereses</h2>
 <table>
     <tr>
-        <th>ID</th><th>Tasa</th><th>Tipo</th><th>Crédito ID</th>
+        <th>ID</th>
+        <th>Crédito</th>
+        <th>Tasa (%)</th>
+        <th>Tipo</th>
+        <th>Acciones</th>
     </tr>
     {% for i in intereses %}
     <tr>
         <td>{{ i.idInteres }}</td>
+        <td>{{ i.credito_id }}</td>
         <td>{{ i.tasa }}</td>
         <td>{{ i.tipo }}</td>
-        <td>{{ i.credito_id }}</td>
+        <td>
+            <button type="button"
+                    onclick="cargarInteresDesdeFila(this)"
+                    data-id="{{ i.idInteres }}"
+                    data-credito_id="{{ i.credito_id }}"
+                    data-tasa="{{ i.tasa }}"
+                    data-tipo="{{ i.tipo }}">
+                Editar
+            </button>
+        </td>
     </tr>
     {% endfor %}
 </table>
+
+<script>
+// ---------- Lógica de formulario (nuevo/editar) ----------
+function prepararNuevoInteres() {
+    const form = document.getElementById('interesForm');
+    form.reset();
+    document.getElementById('idInteres').value = '';
+    form.action = '/intereses/crear';
+}
+
+function cargarInteresDesdeFila(btn) {
+    const form = document.getElementById('interesForm');
+
+    const id = btn.dataset.id;
+    const credito_id = btn.dataset.credito_id;
+    const tasa = btn.dataset.tasa;
+    const tipo = btn.dataset.tipo;
+
+    document.getElementById('idInteres').value = id;
+    document.getElementById('credito_id').value = credito_id;
+    document.getElementById('tasa').value = tasa;
+    document.getElementById('tipo').value = tipo;
+
+    form.action = '/intereses/actualizar';
+}
+
+// ---------- Validaciones antes de enviar ----------
+function validarInteres() {
+    const creditoId = document.getElementById('credito_id').value;
+    const tasaStr = document.getElementById('tasa').value.trim();
+    const tipo = document.getElementById('tipo').value.trim();
+
+    if (!creditoId) {
+        alert('Debe seleccionar un crédito.');
+        return false;
+    }
+
+    if (!tasaStr) {
+        alert('La tasa de interés es obligatoria.');
+        return false;
+    }
+
+    const tasa = parseFloat(tasaStr.replace(',', '.'));
+    if (isNaN(tasa) || tasa <= 0 || tasa > 100) {
+        alert('La tasa debe ser un número mayor que 0 y menor o igual a 100.');
+        return false;
+    }
+
+    if (!tipo) {
+        alert('Debe seleccionar el tipo de interés.');
+        return false;
+    }
+
+    return true;
+}
+</script>
 {% endblock %}
