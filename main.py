@@ -1,3 +1,4 @@
+import os
 from fastapi import (
     FastAPI,
     Request,
@@ -45,8 +46,9 @@ app = FastAPI(
     version="1.0.0",
 )
 
+
 # -----------------------------
-# Crear carpeta upload si no existe
+# Crear carpeta upload si no existe, crear carpeta upload
 # -----------------------------
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOADS_DIR = os.path.join(BASE_DIR, "upload")
@@ -54,7 +56,7 @@ os.makedirs(UPLOADS_DIR, exist_ok=True)
 os.makedirs(os.path.join(UPLOADS_DIR, "cedulas"), exist_ok=True)  
 
 # -----------------------------
-# Templates y archivos estáticos
+# Templates y archivos estáticos, creador de la carpeta upload 
 # -----------------------------
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.mount("/upload", StaticFiles(directory="upload"), name="upload")
