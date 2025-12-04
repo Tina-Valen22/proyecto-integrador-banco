@@ -5,13 +5,19 @@
 <h1>Usuarios</h1>
 
 <h2>Gestionar Usuario</h2>
-<form method="post" action="/usuarios/crear">
-    <input type="text" name="nombre" placeholder="Nombre" required>
-    <input type="number" step="0.01" name="ingresos" placeholder="Ingresos" required>
-    <input type="number" step="0.01" name="gastos" placeholder="Gastos" required>
-    <input type="email" name="correo" placeholder="Correo electrónico">
-    <input type="text" name="telefono" placeholder="Teléfono">
+
+<!-- Formulario para CREAR o EDITAR -->
+<form method="post" id="usuarioForm" action="/usuarios/crear">
+    <input type="hidden" name="idUsuario" id="idUsuario">
+
+    <input type="text" name="nombre" id="nombre" placeholder="Nombre" required>
+    <input type="number" step="0.01" name="ingresos" id="ingresos" placeholder="Ingresos" required>
+    <input type="number" step="0.01" name="gastos" id="gastos" placeholder="Gastos" required>
+    <input type="email" name="correo" id="correo" placeholder="Correo electrónico">
+    <input type="text" name="telefono" id="telefono" placeholder="Teléfono">
+
     <button type="submit">Guardar</button>
+    <button type="button" onclick="prepararNuevo()">Nuevo</button>
 </form>
 
 <h2>Lista de Usuarios</h2>
@@ -23,6 +29,7 @@
         <th>Gastos</th>
         <th>Correo</th>
         <th>Teléfono</th>
+        <th>Acciones</th>
     </tr>
     {% for u in usuarios %}
     <tr>
@@ -32,7 +39,42 @@
         <td>{{ u.gastos }}</td>
         <td>{{ u.correo }}</td>
         <td>{{ u.telefono }}</td>
+        <td>
+            <button type="button"
+                    onclick="cargarUsuarioDesdeFila(this)"
+                    data-id="{{ u.idUsuario }}"
+                    data-nombre="{{ u.nombre }}"
+                    data-ingresos="{{ u.ingresos }}"
+                    data-gastos="{{ u.gastos }}"
+                    data-correo="{{ u.correo or '' }}"
+                    data-telefono="{{ u.telefono or '' }}">
+                Editar
+            </button>
+        </td>
     </tr>
     {% endfor %}
 </table>
+
+<script>
+function prepararNuevo() {
+    const form = document.getElementById('usuarioForm');
+    form.reset();
+    document.getElementById('idUsuario').value = '';
+    form.action = '/usuarios/crear';
+}
+
+function cargarUsuarioDesdeFila(btn) {
+    const form = document.getElementById('usuarioForm');
+
+    document.getElementById('idUsuario').value = btn.dataset.id;
+    document.getElementById('nombre').value = btn.dataset.nombre;
+    document.getElementById('ingresos').value = btn.dataset.ingresos;
+    document.getElementById('gastos').value = btn.dataset.gastos;
+    document.getElementById('correo').value = btn.dataset.correo;
+    document.getElementById('telefono').value = btn.dataset.telefono;
+
+    // Cuando hay ID, el formulario actualiza en vez de crear
+    form.action = '/usuarios/actualizar';
+}
+</script>
 {% endblock %}
