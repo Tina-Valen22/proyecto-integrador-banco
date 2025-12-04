@@ -1,8 +1,9 @@
-# models/categoria.py
+from __future__ import annotations
 
 from typing import Optional, List
 from sqlmodel import SQLModel, Field, Relationship
-from models.credito_categoria import CreditoCategoria
+
+from .credito_categoria import CreditoCategoria
 
 
 class Categoria(SQLModel, table=True):
@@ -10,6 +11,7 @@ class Categoria(SQLModel, table=True):
     nombre: str
     descripcion: Optional[str] = None
 
+    # Relación N:M con Credito a través de CreditoCategoria
     creditos: List["Credito"] = Relationship(
         back_populates="categorias",
         link_model=CreditoCategoria,

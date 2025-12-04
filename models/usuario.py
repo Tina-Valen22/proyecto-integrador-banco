@@ -1,5 +1,8 @@
-from sqlmodel import SQLModel, Field, Relationship
+from __future__ import annotations
+
 from typing import Optional, List
+from sqlmodel import SQLModel, Field, Relationship
+
 
 class Usuario(SQLModel, table=True):
     idUsuario: Optional[int] = Field(default=None, primary_key=True)
