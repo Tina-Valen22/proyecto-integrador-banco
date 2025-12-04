@@ -1,101 +1,105 @@
 {% extends "base.html" %}
-{% block title %}Usuarios{% endblock %}
+
+{% block title %}Gestión de Usuarios{% endblock %}
 
 {% block content %}
-<h1>Usuarios</h1>
+<h1>Gestión de Usuarios</h1>
 
-<h2>{{ titulo_form or "Gestionar Usuario" }}</h2>
+<h2>Crear / Editar Usuario</h2>
 
-<form method="post" action="{{ form_action or '/usuarios/crear' }}">
-    {% if usuario_editar %}
-        <input type="hidden" name="idUsuario" value="{{ usuario_editar.idUsuario }}">
-    {% endif %}
-
-    <div class="form-row">
-        <label for="nombre">Nombre completo *</label>
-        <input type="text"
-               id="nombre"
-               name="nombre"
-               required
-               maxlength="200"
-               value="{{ usuario_editar.nombre if usuario_editar else '' }}">
+<!--
+  IMPORTANTE:
+  - method="post"
+  - enctype="multipart/form-data" para poder enviar archivos
+  - action="/usuarios/crear" por defecto; si estás editando, puedes cambiarlo desde la vista
+-->
+<form method="post" action="{{ form_action or '/usuarios/crear' }}" enctype="multipart/form-data">
+    <div>
+        <label for="idUsuario">ID (solo para edición):</label>
+        <input type="number" id="idUsuario" name="idUsuario"
+               value="{{ usuario.idUsuario if usuario else '' }}" readonly>
     </div>
 
-    <div class="form-row">
-        <label for="ingresos">Ingresos mensuales (COP) *</label>
-        <input type="number"
-               id="ingresos"
-               name="ingresos"
-               required
-               min="100000"
-               step="0.01"
-               value="{{ usuario_editar.ingresos if usuario_editar else '' }}">
+    <div>
+        <label for="nombre">Nombre*</label>
+        <input type="text" id="nombre" name="nombre"
+               value="{{ usuario.nombre if usuario else '' }}" required>
     </div>
 
-    <div class="form-row">
-        <label for="gastos">Gastos mensuales (COP) *</label>
-        <input type="number"
-               id="gastos"
-               name="gastos"
-               required
-               min="0"
-               step="0.01"
-               value="{{ usuario_editar.gastos if usuario_editar else '' }}">
+    <div>
+        <label for="ingresos">Ingresos*</label>
+        <input type="number" id="ingresos" name="ingresos"
+               value="{{ usuario.ingresos if usuario else '' }}"
+               min="0" step="0.01" required>
     </div>
 
-    <div class="form-row">
-        <label for="correo">Correo electrónico *</label>
-        <input type="email"
-               id="correo"
-               name="correo"
-               required
-               maxlength="200"
-               value="{{ usuario_editar.correo if usuario_editar else '' }}">
+    <div>
+        <label for="gastos">Gastos*</label>
+        <input type="number" id="gastos" name="gastos"
+               value="{{ usuario.gastos if usuario else '' }}"
+               min="0" step="0.01" required>
     </div>
 
-    <div class="form-row">
-        <label for="telefono">Teléfono *</label>
-        <input type="tel"
-               id="telefono"
-               name="telefono"
-               required
-               maxlength="20"
-               value="{{ usuario_editar.telefono if usuario_editar else '' }}">
+    <div>
+        <label for="correo">Correo*</label>
+        <input type="email" id="correo" name="correo"
+               value="{{ usuario.correo if usuario else '' }}" required>
     </div>
 
-    <div class="form-actions">
-        <button type="submit">
-            {% if usuario_editar %}Actualizar{% else %}Guardar{% endif %}
-        </button>
-        <a href="/ui/usuarios">Limpiar / Nuevo</a>
+    <div>
+        <label for="telefono">Teléfono*</label>
+        <input type="tel" id="telefono" name="telefono"
+               value="{{ usuario.telefono if usuario else '' }}" required>
+    </div>
+
+    <div>
+        <label for="cedula">Cédula (PDF o JPG)</label>
+        <input type="file" id="cedula" name="cedula" accept=".pdf,.jpg,.jpeg">
+        {% if usuario and usuario.cedula %}
+            <p>Archivo actual: {{ usuario.cedula }}</p>
+        {% endif %}
+    </div>
+
+    <div style="margin-top: 1rem;">
+        <button type="submit">Guardar</button>
+        <button type="reset">Limpiar</button>
     </div>
 </form>
 
 <hr>
 
 <h2>Lista de Usuarios</h2>
-<table>
-    <tr>
-        <th>ID</th>
-        <th>Nombre</th>
-        <th>Ingresos</th>
-        <th>Gastos</th>
-        <th>Correo</th>
-        <th>Teléfono</th>
-        <th>Acciones</th>
-    </tr>
+<table border="1" cellpadding="4" cellspacing="0">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Ingresos</th>
+            <th>Gastos</th>
+            <th>Correo</th>
+            <th>Teléfono</th>
+            <th>Cédula</th>
+        </tr>
+    </thead>
+    <tbody>
     {% for u in usuarios %}
-    <tr>
-        <td>{{ u.idUsuario }}</td>
-        <td>{{ u.nombre }}</td>
-        <td>{{ u.ingresos }}</td>
-        <td>{{ u.gastos }}</td>
-        <td>{{ u.correo }}</td>
-        <td>{{ u.telefono }}</td>
-        <td>
-            <a href="/ui/usuarios/{{ u.idUsuario }}">Editar</a>
-        </td>
-    </tr>
+        <tr>
+            <td>{{ u.idUsuario }}</td>
+            <td>{{ u.nombre }}</td>
+            <td>{{ u.ingresos }}</td>
+            <td>{{ u.gastos }}</td>
+            <td>{{ u.correo }}</td>
+            <td>{{ u.telefono }}</td>
+            <td>
+                {% if u.cedula %}
+                    {{ u.cedula }}
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+        </tr>
     {% endfor %}
+    </tbody>
 </table>
+
 {% endblock %}
