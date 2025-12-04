@@ -72,16 +72,15 @@
 <hr>
 
 <h2>Lista de Usuarios</h2>
-<table border="1" cellpadding="4" cellspacing="0">
+<table border="1" cellpadding="5" cellspacing="0" style="width: 100%; border-collapse: collapse;">
     <thead>
-        <tr>
+        <tr style="background-color: #f2f2f2;">
             <th>ID</th>
             <th>Nombre</th>
             <th>Ingresos</th>
             <th>Gastos</th>
             <th>Correo</th>
-            <th>Teléfono</th>
-            <th>Cédula (archivo)</th>
+            <th>Documento (Cédula)</th> <th>Acciones</th>
         </tr>
     </thead>
     <tbody>
@@ -92,17 +91,26 @@
             <td>{{ u.ingresos }}</td>
             <td>{{ u.gastos }}</td>
             <td>{{ u.correo }}</td>
-            <td>{{ u.telefono }}</td>
-            <td>
+            
+            <td style="text-align: center;">
                 {% if u.cedula %}
-                    {# sacamos solo el nombre del archivo, sin la ruta completa #}
-                    {% set partes = u.cedula.split('/') %}
-                    {{ partes[-1] }}
-                    -
-                    <a href="/{{ u.cedula }}" target="_blank">Ver</a>
+                    {% set nombre_archivo = u.cedula.split('/')[-1] %}
+                    
+                    <div style="font-size: 0.9em; margin-bottom: 5px;">
+                        <strong>{{ nombre_archivo }}</strong>
+                    </div>
+
+                    <a href="/{{ u.cedula }}" target="_blank" 
+                       style="background-color: #007bff; color: white; padding: 4px 8px; text-decoration: none; border-radius: 4px; font-size: 0.8em;">
+                       👁️ Ver Documento
+                    </a>
                 {% else %}
-                    -
+                    <span style="color: #999;">Sin archivo</span>
                 {% endif %}
+            </td>
+
+            <td>
+                <a href="/ui/usuarios/{{ u.idUsuario }}" style="color: #28a745; font-weight: bold;">Editar</a>
             </td>
         </tr>
     {% endfor %}

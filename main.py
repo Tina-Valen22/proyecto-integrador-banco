@@ -1,4 +1,7 @@
 import os
+import shutil
+import uuid
+from fastapi import UploadFile, File
 from fastapi import (
     FastAPI,
     Request,
@@ -144,14 +147,40 @@ def ui_usuarios_crear(
     gastos: float = Form(...),
     correo: str = Form(...),
     telefono: str = Form(...),
+    cedula: UploadFile = File(None),
     session: Session = Depends(get_session),
 ):
+    # 1. Lógica para guardar el archivo (si se subió uno)
+    ruta_para_bd = None
+    
+    if cedula and cedula.filename:
+        # Validar extensión
+        ext = os.path.splitext(cedula.filename)[1].lower()
+        if ext not in [".pdf", ".jpg", ".jpeg", ".png"]:
+             raise HTTPException(status_code=400, detail="Solo archivos PDF o JPG")
+        
+        # Generar nombre único para el disco (evita conflictos)
+        nombre_archivo = f"{uuid.uuid4().hex}{ext}"
+        
+        # Ruta física donde se guarda (depende de tu SO)
+        ruta_fisica = os.path.join(UPLOADS_DIR, "cedulas", nombre_archivo)
+        
+        # Guardar en disco
+        with open(ruta_fisica, "wb") as buffer:
+            shutil.copyfileobj(cedula.file, buffer)
+            
+        # IMPORTANTE: Guardamos la ruta relativa con "/" para que funcione como URL web
+        # Ejemplo: upload/cedulas/archivo.jpg
+        ruta_para_bd = f"upload/cedulas/{nombre_archivo}"
+
+    # 2. Crear usuario
     usuario = Usuario(
         nombre=nombre,
         ingresos=ingresos,
         gastos=gastos,
         correo=correo,
         telefono=telefono,
+        cedula=ruta_para_bd, # Guardamos la ruta web
     )
     session.add(usuario)
     session.commit()
@@ -167,6 +196,7 @@ def ui_usuarios_actualizar(
     gastos: float = Form(...),
     correo: str = Form(...),
     telefono: str = Form(...),
+    cedula: UploadFile = File(None),
     session: Session = Depends(get_session),
 ):
     usuario = session.get(Usuario, usuario_id)
@@ -178,6 +208,21 @@ def ui_usuarios_actualizar(
     usuario.gastos = gastos
     usuario.correo = correo
     usuario.telefono = telefono
+
+    # Si suben un nuevo archivo, lo procesamos
+    if cedula and cedula.filename:
+        ext = os.path.splitext(cedula.filename)[1].lower()
+        if ext not in [".pdf", ".jpg", ".jpeg", ".png"]:
+             raise HTTPException(status_code=400, detail="Solo archivos PDF o JPG")
+        
+        nombre_archivo = f"{uuid.uuid4().hex}{ext}"
+        ruta_fisica = os.path.join(UPLOADS_DIR, "cedulas", nombre_archivo)
+        
+        with open(ruta_fisica, "wb") as buffer:
+            shutil.copyfileobj(cedula.file, buffer)
+            
+        # Actualizamos el campo en la BD
+        usuario.cedula = f"upload/cedulas/{nombre_archivo}"
 
     session.commit()
 
