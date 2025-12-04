@@ -47,12 +47,12 @@ def on_startup():
 # Rutas base (vista HTML)
 # -----------------------------
 @app.get("/")
-def read_root(request: Request):
-    """
-    Página principal HTML (usa templates/index.html).
-    """
-    return templates.TemplateResponse("index.html", {"request": request})
-
+def read_root():
+    return {
+        "status": "ok",
+        "message": "API Integrador Banco funcionando",
+        "docs": "/docs",
+    }
 
 @app.get("/health")
 def health_check():
